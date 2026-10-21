@@ -1,0 +1,7 @@
+{
+  "name": "tag-stickmen",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": { "start": "node --env-file-if-exists=.env server.js" },
+  "dependencies": { "express": "^4.21.2", "socket.io": "^4.8.1" }
+}

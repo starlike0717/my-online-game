@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="theme-color" content="#f8f7fb">
+  <title>빙글빙글 술래잡기</title>
+  <link rel="stylesheet" href="style.css?v=21">
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div class="brand"><span class="brand-mark">↗</span><span>PLAYGROUND <i>·</i> ONLINE</span></div>
+      <div class="topbar-tools">
+        <div class="connection"><b class="led" id="connectionLed"></b><span id="connectionText">연결 확인 중</span></div>
+        <button type="button" class="account-open language-toggle" id="languageToggle" aria-label="Switch language to English" title="Switch language to English">EN</button>
+        <button type="button" class="account-open" id="deviceSettingsButton">조작 설정</button>
+        <button type="button" class="account-open" id="accountOpenButton">로그인</button>
+        <button type="button" class="account-open admin-open" id="adminOpenButton" hidden>관리자</button>
+      </div>
+    </header>
+    <section class="intro">
+      <div class="eyebrow">친구들과 뛰어놀 시간</div>
+      <h1>빙글빙글 <span>술래잡기</span></h1>
+      <p>술래를 피해 달려요. 10초마다 술래가 바뀌어요!</p>
+    </section>
+
+    <section class="game-card">
+      <div class="hud">
+        <div class="hud-cell room"><span class="label">ROOM</span><div><strong id="roomLabel">—</strong><button id="copyBtn" disabled>복사</button></div></div>
+        <div class="hud-cell practice-hud" id="practiceStageHud" hidden><span class="label">연습 진행</span><strong id="practiceStageLabel">1단계</strong></div>
+        <div class="hud-cell practice-hud" id="practiceCoinHud" hidden><span class="label">코인</span><strong><span id="practiceCoinLabel">0</span> C</strong></div>
+        <div class="hud-cell timer-cell"><span class="label">다음 술래 교대</span><strong id="timer">--:--</strong></div>
+        <div class="hud-cell count-cell"><span class="label">남은 플레이어</span><strong><span id="playerCount">0</span><small> / 12</small></strong></div>
+      </div>
+      <div class="arena-wrap">
+        <canvas id="arena" width="800" height="480" tabindex="0" aria-label="술래잡기 게임 화면"></canvas>
+        <div class="touch-controls" id="touchControls" aria-label="터치 이동 조작" hidden>
+          <div class="touch-dpad">
+            <button type="button" data-touch-direction="up" aria-label="위로">↑</button>
+            <button type="button" data-touch-direction="left" aria-label="왼쪽으로">←</button>
+            <button type="button" data-touch-direction="right" aria-label="오른쪽으로">→</button>
+            <button type="button" data-touch-direction="down" aria-label="아래로">↓</button>
+          </div>
+          <button type="button" class="mobile-skill-button" id="mobileSkillButton" aria-label="스킬 사용" hidden>
+            <span class="mobile-skill-icon" id="mobileSkillIcon" aria-hidden="true">✦</span>
+            <span id="mobileSkillLabel">스킬</span>
+            <small id="mobileSkillCooldown">사용</small>
+          </button>
+        </div>
+        <section class="overlay" id="joinOverlay" aria-label="게임 참가">
+          <div class="join-panel">
+            <div class="spark">✳</div>
+            <h2>같이 뛰어볼까요?</h2>
+            <p id="joinDescription">이름과 방 코드를 입력해 주세요.</p>
+            <div class="mode-select" role="group" aria-label="게임 모드 선택">
+              <button type="button" class="mode-button" id="onlineModeButton" aria-pressed="false">온라인</button>
+              <button type="button" class="mode-button" id="matchModeButton" aria-pressed="false">매칭</button>
+              <button type="button" class="mode-button" id="practiceModeButton" aria-pressed="false">연습</button>
+            </div>
+            <div class="practice-menu" id="practiceMenu" hidden>
+              <div class="practice-kind-select" role="group" aria-label="연습 종류">
+                <button type="button" class="mode-button" id="challengeModeButton" aria-pressed="true">단계 도전</button>
+                <button type="button" class="mode-button" id="trainingModeButton" aria-pressed="false">특수 훈련장</button>
+              </div>
+              <div class="practice-summary"><span id="practiceProfileSummary">1단계 · 0 코인</span><button type="button" id="lobbyShopButton">상점</button></div>
+            </div>
+            <form id="joinForm">
+              <label><span id="identityLabel">내 이름</span><input id="nameInput" maxlength="20" placeholder="예: 민지" autocomplete="nickname" required></label>
+              <label id="roomField">방 코드<input id="roomInput" maxlength="12" placeholder="예: PALS" autocomplete="off" required></label>
+              <button class="join-btn" id="joinButton">게임 시작 <span>→</span></button>
+            </form>
+            <div class="tip" id="modeTip">같은 방 코드를 친구와 공유해 보세요</div>
+          </div>
+        </section>
+        <section class="overlay" id="matchOverlay" aria-label="빠른 매칭" hidden>
+          <div class="match-panel">
+            <div class="spark">⌁</div>
+            <h2>상대를 찾고 있어요</h2>
+            <p id="matchDescription">최대 30초 동안 함께할 플레이어를 찾습니다.</p>
+            <div class="match-stats">
+              <span>대기 인원 <strong><span id="matchPlayerCount">1</span> / 12</strong></span>
+              <span>남은 시간 <strong id="matchTimer">00:30</strong></span>
+              <span>바로 시작 동의 <strong><span id="matchReadyCount">0</span> / <span id="matchReadyTotal">1</span></strong></span>
+            </div>
+            <button class="join-btn" id="matchReadyButton" type="button">바로 시작하기</button>
+            <button class="match-cancel" id="matchCancelButton" type="button">매칭 취소</button>
+          </div>
+        </section>
+        <section class="overlay shop-overlay" id="shopOverlay" aria-label="연습 상점" hidden>
+          <div class="shop-panel">
+            <div class="spark">✦</div>
+            <h2>연습 상점</h2>
+            <p>장비는 여러 개 보유할 수 있지만, 한 번에 하나만 장착할 수 있어요.</p>
+            <div class="shop-balance">보유 코인 <strong id="shopCoinLabel">0</strong></div>
+            <div id="shopItems"></div>
+            <button class="match-cancel shop-close" id="closeShopButton" type="button">돌아가기</button>
+          </div>
+        </section>
+        <section class="overlay account-overlay" id="accountOverlay" aria-label="계정 로그인" hidden>
+          <div class="account-panel">
+            <div class="spark">☁</div>
+            <h2 id="accountTitle">코인 계정</h2>
+            <p id="accountDescription">로그인하면 코인과 장비가 계정에 저장돼요.</p>
+            <div class="mode-select" id="accountModeTabs" role="group" aria-label="로그인 또는 가입">
+              <button type="button" class="mode-button" id="accountLoginModeButton" aria-pressed="true">로그인</button>
+              <button type="button" class="mode-button" id="accountRegisterModeButton" aria-pressed="false">새 계정 만들기</button>
+            </div>
+            <form id="accountForm">
+              <label>이름 / 아이디<input id="accountUsernameInput" maxlength="20" minlength="2" autocomplete="username" required placeholder="이름 또는 아이디"></label>
+              <label>비밀번호<div class="password-input-row"><input id="accountPasswordInput" type="password" minlength="8" maxlength="100" autocomplete="current-password" required placeholder="8자 이상"><button type="button" class="password-visibility-button" id="passwordVisibilityButton" aria-label="비밀번호 보기" aria-controls="accountPasswordInput" aria-pressed="false">보기</button></div></label>
+              <button class="join-btn" id="accountSubmitButton" type="submit">로그인</button>
+            </form>
+            <div class="account-logged-in" id="accountLoggedIn" hidden>
+              <strong id="accountUsernameLabel"></strong>
+              <span><span id="accountCoinsLabel">0</span> 코인 · <span id="accountStageLabel">1</span>단계</span>
+              <button type="button" class="match-cancel password-change-open" id="passwordChangeOpenButton">비밀번호 변경</button>
+              <form class="password-change-form" id="passwordChangeForm" hidden>
+                <label>현재 비밀번호<div class="password-input-row"><input id="currentPasswordInput" type="password" minlength="8" maxlength="100" autocomplete="current-password" required><button type="button" class="password-visibility-button" id="currentPasswordVisibilityButton" aria-label="비밀번호 보기" aria-controls="currentPasswordInput" aria-pressed="false">보기</button></div></label>
+                <label>새 비밀번호<div class="password-input-row"><input id="newPasswordInput" type="password" minlength="8" maxlength="100" autocomplete="new-password" required placeholder="8자 이상"><button type="button" class="password-visibility-button" id="newPasswordVisibilityButton" aria-label="비밀번호 보기" aria-controls="newPasswordInput" aria-pressed="false">보기</button></div></label>
+                <label>새 비밀번호 확인<div class="password-input-row"><input id="confirmPasswordInput" type="password" minlength="8" maxlength="100" autocomplete="new-password" required placeholder="새 비밀번호를 다시 입력"><button type="button" class="password-visibility-button" id="confirmPasswordVisibilityButton" aria-label="비밀번호 보기" aria-controls="confirmPasswordInput" aria-pressed="false">보기</button></div></label>
+                <div class="password-change-actions">
+                  <button type="submit" class="join-btn" id="passwordChangeSubmitButton">변경 저장</button>
+                  <button type="button" class="match-cancel" id="passwordChangeCancelButton">취소</button>
+                </div>
+                <p class="account-message" id="passwordChangeMessage" role="status"></p>
+              </form>
+              <button type="button" class="match-cancel" id="accountLogoutButton">로그아웃</button>
+            </div>
+            <p class="account-message" id="accountMessage" role="status"></p>
+            <button type="button" class="match-cancel" id="accountCloseButton">닫기</button>
+          </div>
+        </section>
+        <section class="overlay admin-overlay" id="adminOverlay" aria-label="관리자" hidden>
+          <div class="admin-panel" role="dialog" aria-modal="true" aria-labelledby="adminTitle">
+            <div class="admin-heading">
+              <div><div class="spark">⚙</div><h2 id="adminTitle">관리자</h2></div>
+              <button type="button" class="match-cancel admin-close" id="adminCloseButton">닫기</button>
+            </div>
+            <p>계정에 코인을 지급하고 현재 접속한 플레이어를 확인해요.</p>
+            <form class="admin-coin-form" id="adminCoinForm">
+              <label>코인 받을 아이디<input id="adminTargetUsername" maxlength="20" required placeholder="플레이어 아이디"></label>
+              <label>지급 코인<input id="adminCoinAmount" type="number" min="1" max="9007199254740991" step="1" value="1000" required></label>
+              <button class="join-btn" id="adminCoinSubmitButton" type="submit">코인 지급</button>
+            </form>
+            <p class="admin-message" id="adminCoinMessage" role="status"></p>
+            <div class="admin-player-heading">
+              <h3>접속 중인 플레이어 <span id="adminPlayerCount">0</span></h3>
+              <button type="button" class="account-open" id="adminRefreshButton">새로고침</button>
+            </div>
+            <p class="admin-list-message" id="adminPlayerMessage" role="status">목록을 불러오는 중…</p>
+            <ul class="admin-player-list" id="adminPlayerList"></ul>
+          </div>
+        </section>
+        <section class="pause-overlay" id="pauseOverlay" aria-live="polite" hidden>
+          <div><strong id="pauseOverlayTitle">일시정지됨</strong><span id="pauseOverlayDescription">계속하려면 계속하기를 눌러 주세요.</span></div>
+        </section>
+        <section class="result-panel" id="resultPanel" aria-live="polite" hidden>
+          <div class="result-spark">✦</div>
+          <h2 id="resultTitle">승리!</h2>
+          <p id="resultDescription">다시 한 판 해볼까요?</p>
+          <div class="result-actions">
+            <button class="join-btn" id="restartButton">다시 하기 <span>↻</span></button>
+            <button class="shop-result-button" id="resultShopButton" type="button" hidden>상점</button>
+          </div>
+        </section>
+        <div class="toast" id="toast" role="status"></div>
+      </div>
+      <div class="bottom-bar">
+        <div class="controls" id="keyboardControls"><span class="control-title">움직이기</span><kbd>W</kbd><kbd>A</kbd><kbd>S</kbd><kbd>D</kbd><span class="or">또는</span><kbd>↑</kbd><kbd>←</kbd><kbd>↓</kbd><kbd>→</kbd></div>
+        <div class="practice-actions" id="practiceActions" hidden>
+          <span class="equipped-weapon-icon" id="equippedWeaponIcon" aria-label="장착한 무기"></span>
+          <span id="practiceGearLabel">장비 없음</span>
+          <small class="special-cooldown-label" id="specialCooldownLabel" aria-live="polite"></small>
+          <div id="specialActionHost"></div>
+          <small class="right-click-tip" id="weaponControlTip">Q 또는 우클릭으로 사용</small>
+          <button type="button" id="practicePauseButton" hidden>일시정지</button>
+          <button type="button" id="practiceShopButton">상점</button>
+        </div>
+        <div class="status-line" id="statusLine">게임에 참가해 주세요</div>
+        <button class="leave-btn" id="leaveButton" type="button" hidden>나가기</button>
+      </div>
+    </section>
+    <section class="device-setup-overlay" id="deviceSetupOverlay" aria-label="기기 조작 설정" hidden>
+      <div class="device-setup-panel" role="dialog" aria-modal="true" aria-labelledby="deviceSetupTitle">
+        <div class="spark">⌁</div>
+        <h2 id="deviceSetupTitle">어떤 기기로 플레이하나요?</h2>
+        <p>기기에 맞는 조작 방법을 설정해 주세요. 나중에 조작 설정에서 바꿀 수 있어요.</p>
+        <div class="device-setup-options">
+          <button type="button" data-device-mode="desktop"><strong>🖥️ PC</strong><small>WASD 또는 방향키</small></button>
+          <button type="button" data-device-mode="mobile"><strong>📱 핸드폰</strong><small>화면 터치 조작</small></button>
+        </div>
+      </div>
+    </section>
+    <footer><span>술래가 되면 반짝반짝!</span><span>최대 12명 <i>·</i> 실시간 멀티플레이</span></footer>
+  </main>
+  <script src="game-config.js" defer></script>
+  <script src="game.js?v=47" defer></script>
+</body>
+</html>
