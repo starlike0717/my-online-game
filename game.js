@@ -10,6 +10,16 @@
   const LANGUAGE_KEY = 'tag-stickmen-language-v1';
   let language = (() => { try { return localStorage.getItem(LANGUAGE_KEY) === 'en' ? 'en' : 'ko'; } catch { return 'ko'; } })();
   const ENGLISH_TEXT = {
+    '메뉴 스크롤':'Scroll menu', '↑ 위로':'↑ Up', '↓ 아래로':'↓ Down',
+    '입장 버튼으로 ↓':'Go to entry button ↓', '시작 버튼으로 ↓':'Go to start button ↓',
+    '특정 계정 관리':'Manage a specific account', '대상 아이디':'Target username', '계정 조회':'Look up account',
+    '대상 아이디를 입력하거나 접속 목록에서 선택하세요. 선택한 계정에만 적용됩니다.':'Enter a username or select an online account. Changes apply only to that account.',
+    '계정을 조회하면 보유 코인과 핵 기능을 볼 수 있어요.':'Look up an account to view its coins and powers.',
+    '이 계정에 허용할 핵':'Powers granted to this account', '선택한 핵 적용':'Apply selected powers', '핵 전부 회수':'Revoke all granted powers',
+    '코인 수량':'Coin amount', '코인 회수':'Revoke coins', '대상 아이디를 입력해 주세요.':'Enter a target username.',
+    '보유 코인보다 많이 회수할 수 없어요.':'You cannot revoke more coins than the account owns.',
+    '핵 기능 설정이 올바르지 않아요.':'Invalid power settings.', '코인 작업이 올바르지 않아요.':'Invalid coin action.',
+
     '연결 확인 중':'Checking connection', '로그인':'Log in', '친구들과 뛰어놀 시간':'Time to run with friends',
     '빙글빙글':'Stickman', '술래잡기':'Tag', '술래를 피해 달려요. 10초마다 술래가 바뀌어요!':'Run from the tagger. The tagger changes every 10 seconds!',
     '복사':'Copy', '연습 진행':'Practice stage', '코인':'Coins', '다음 술래 교대':'Next tagger swap', '남은 플레이어':'Players left',
@@ -707,8 +717,71 @@
       kick.disabled = protectedPlayer;
       kick.textContent = player.isAdmin ? '관리자' : protectedPlayer ? '나' : '추방';
       if (!player.socketId) kick.disabled = true;
-      row.append(info, kick);
+      const select = document.createElement('button');
+      select.type = 'button';
+      select.className = 'admin-select-player';
+      select.textContent = language === 'en' ? 'Select' : '선택';
+      select.disabled = !player.accountUsername;
+      select.dataset.username = player.accountUsername || '';
+      row.append(info, select, kick);
       list.append(row);
+    }
+  }
+  const TARGET_POWER_INPUTS = { speed:'targetSpeedToggle', invincible:'targetInvincibleToggle', aim:'targetAimToggle' };
+  let loadedAdminTarget = null;
+  let adminTargetBusy = false;
+  function hasGamePower(power) {
+    return !!accountProfile && (accountProfile.grantedPowers?.[power] === true || (accountProfile.isAdmin && adminPowerState[power] === true));
+  }
+  function displayAdminTarget(profile) {
+    loadedAdminTarget = profile.username;
+    $('adminTargetSummary').textContent = language === 'en'
+      ? `${profile.username} · ${profile.coins.toLocaleString()} coins`
+      : `${profile.username} · 보유 ${profile.coins.toLocaleString()} 코인`;
+    for (const [power, id] of Object.entries(TARGET_POWER_INPUTS)) $(id).checked = profile.grantedPowers?.[power] === true;
+    $('adminTargetPowers').disabled = false;
+  }
+  async function loadAdminTarget() {
+    if (!accountProfile?.isAdmin || adminTargetBusy) return;
+    const username = $('adminTargetUsername').value.trim();
+    if (!username) { $('adminTargetMessage').textContent = translateText('대상 아이디를 입력해 주세요.'); return; }
+    adminTargetBusy = true;
+    loadedAdminTarget = null;
+    $('adminTargetPowers').disabled = true;
+    $('adminTargetLoadButton').disabled = true;
+    $('adminTargetMessage').textContent = '';
+    try {
+      const result = await accountRequest(`/api/admin/account-powers?username=${encodeURIComponent(username)}`);
+      if ($('adminTargetUsername').value.trim() !== username) return;
+      displayAdminTarget(result.profile);
+    } catch (error) {
+      $('adminTargetMessage').textContent = translateText(error.message);
+    } finally {
+      adminTargetBusy = false;
+      $('adminTargetLoadButton').disabled = false;
+    }
+  }
+  async function saveTargetPowers(revoke = false) {
+    if (!accountProfile?.isAdmin || adminTargetBusy || !loadedAdminTarget) return;
+    const username = loadedAdminTarget;
+    const powers = Object.fromEntries(Object.entries(TARGET_POWER_INPUTS).map(([power, id]) => [power, !revoke && $(id).checked]));
+    adminTargetBusy = true;
+    $('adminTargetPowers').disabled = true;
+    $('adminTargetMessage').textContent = '';
+    try {
+      const result = await accountRequest('/api/admin/account-powers', 'POST', { username, powers });
+      if (result.profile.id === accountProfile?.id) applyAccountProfile(result.profile);
+      if (loadedAdminTarget === username) {
+        displayAdminTarget(result.profile);
+        $('adminTargetMessage').textContent = language === 'en'
+          ? `${username}: powers ${revoke ? 'revoked' : 'updated'}.`
+          : `${username}님의 핵 기능을 ${revoke ? '회수' : '변경'}했어요.`;
+      }
+    } catch (error) {
+      $('adminTargetMessage').textContent = translateText(error.message);
+    } finally {
+      adminTargetBusy = false;
+      $('adminTargetPowers').disabled = !loadedAdminTarget;
     }
   }
   const ADMIN_POWER_INPUTS = { speed:'adminSpeedToggle', invincible:'adminInvincibleToggle', aim:'adminAimToggle' };
@@ -844,24 +917,31 @@
     event.preventDefault();
     if (!accountProfile?.isAdmin) return;
     const button = $('adminCoinSubmitButton');
+    const revokeButton = $('adminCoinRevokeButton');
+    const action = event.submitter?.value === 'revoke' ? 'revoke' : 'grant';
     const username = $('adminTargetUsername').value.trim();
     const amount = Number($('adminCoinAmount').value);
+    if (!username) { $('adminCoinMessage').textContent = translateText('대상 아이디를 입력해 주세요.'); return; }
+    if (button.disabled || revokeButton.disabled) return;
     button.disabled = true;
+    revokeButton.disabled = true;
     $('adminCoinMessage').textContent = '';
     $('adminCoinMessage').classList.remove('error');
     try {
-      const result = await accountRequest('/api/admin/coins', 'POST', { username, amount });
-      if (result.profile.id === accountProfile.id) applyAccountProfile(result.profile);
-      const formatted = result.granted.toLocaleString(language === 'en' ? 'en-US' : 'ko-KR');
+      const result = await accountRequest('/api/admin/coins', 'POST', { username, amount, action });
+      if (result.profile.id === accountProfile?.id) applyAccountProfile(result.profile);
+      const formatted = result.amount.toLocaleString(language === 'en' ? 'en-US' : 'ko-KR');
       $('adminCoinMessage').textContent = language === 'en'
-        ? `Granted ${formatted} coins to ${result.profile.username}.`
-        : `${result.profile.username}님에게 ${formatted} 코인을 지급했어요.`;
+        ? `${action === 'revoke' ? 'Revoked' : 'Granted'} ${formatted} coins: ${result.profile.username}.`
+        : `${result.profile.username}님의 코인 ${formatted}개를 ${action === 'revoke' ? '회수' : '지급'}했어요.`;
+      if (loadedAdminTarget === result.profile.username) displayAdminTarget(result.profile);
       loadAdminPlayers();
     } catch (error) {
       $('adminCoinMessage').textContent = translateText(error.message);
       $('adminCoinMessage').classList.add('error');
     } finally {
       button.disabled = false;
+      revokeButton.disabled = false;
     }
   }
   const explosionBursts = [];
@@ -963,7 +1043,34 @@
     resetJoystick(true);
     held.clear();
   }
+  function syncEntryLayout() {
+    const mobile = deviceMode === 'mobile' || window.matchMedia('(max-width:650px), (pointer:coarse)').matches;
+    const entryOpen = !$('joinOverlay').hidden || !$('matchOverlay').hidden;
+    document.documentElement.classList.toggle('mobile-layout', mobile);
+    document.documentElement.classList.toggle('entry-menu-open', entryOpen);
+    canvas.parentElement.classList.toggle('entry-open', entryOpen);
+  }
+  function scrollEntryMenu(event) {
+    const button = event.target.closest('[data-menu-scroll]');
+    if (!button) return;
+    const menu = button.closest('.overlay');
+    const direction = button.dataset.menuScroll;
+    if (direction === 'end') {
+      const target = menu.id === 'joinOverlay' ? $('joinButton') : $('matchReadyButton');
+      target.scrollIntoView({ behavior:'auto', block:'center' });
+      return;
+    }
+    const distance = (direction === 'up' ? -1 : 1) * Math.max(160, window.innerHeight * .55);
+    if (menu.scrollHeight > menu.clientHeight + 1) menu.scrollTop += distance;
+    else window.scrollBy({ top:distance, behavior:'auto' });
+  }
+  function keepEntryInputVisible() {
+    const input = document.activeElement;
+    if (!document.documentElement.classList.contains('mobile-layout') || !$('joinOverlay').contains(input) || !input?.matches('input')) return;
+    input.scrollIntoView({ behavior:'auto', block:'center' });
+  }
   function updateDeviceControls() {
+    syncEntryLayout();
     $('touchControls').hidden = deviceMode !== 'mobile' || (!practiceMode && !myId) || matchmaking;
     if ($('touchControls').hidden) resetJoystick(true);
     $('keyboardControls').hidden = deviceMode === 'mobile';
@@ -1425,6 +1532,9 @@
         toast('관리자에 의해 접속이 종료되었어요.');
         returnToLobby();
       });
+      socket.on('account-profile', data => {
+        if (data.profile?.id === accountProfile?.id) applyAccountProfile(data.profile);
+      });
       socket.on('joined', data => {
         myId = data.id;
         onlineProjectiles = []; onlineTraps = []; onlineFields = []; onlineDecoys = [];
@@ -1530,8 +1640,24 @@
   $('adminCloseButton').addEventListener('click', closeAdminPanel);
   $('adminRefreshButton').addEventListener('click', loadAdminPlayers);
   $('adminCoinForm').addEventListener('submit', grantAdminCoins);
+  $('adminTargetLoadButton').addEventListener('click', loadAdminTarget);
+  $('adminTargetUsername').addEventListener('input', () => {
+    loadedAdminTarget = null;
+    $('adminTargetPowers').disabled = true;
+    $('adminTargetSummary').textContent = translateText('계정을 조회하면 보유 코인과 핵 기능을 볼 수 있어요.');
+    $('adminTargetMessage').textContent = '';
+  });
+  $('adminTargetSaveButton').addEventListener('click', () => saveTargetPowers(false));
+  $('adminTargetRevokeButton').addEventListener('click', () => saveTargetPowers(true));
   for (const id of Object.values(ADMIN_POWER_INPUTS)) $(id).addEventListener('change', saveAdminPowers);
   $('adminPlayerList').addEventListener('click', event => {
+    const select = event.target.closest('.admin-select-player');
+    if (select && !select.disabled) {
+      $('adminTargetUsername').value = select.dataset.username;
+      loadedAdminTarget = null;
+      $('adminTargetPowers').disabled = true;
+      loadAdminTarget();
+    }
     const button = event.target.closest('.admin-kick-button');
     if (button) kickAdminPlayer(button);
   });
@@ -1803,7 +1929,7 @@
     updatePracticeActions(now);
   }
   function getPracticeProjectileAim(player) {
-    const canAim = practiceMode && accountProfile?.isAdmin && adminPowerState.aim;
+    const canAim = practiceMode && hasGamePower('aim');
     const target = canAim
       ? [...players.values()].filter(other => other.alive && other.id !== player.id)
         .sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y))[0]
@@ -2056,7 +2182,7 @@
   }
   function eliminatePracticePlayer(player, time, reason = '잡혀') {
     if (!player.alive) return;
-    if (player.id === myId && accountProfile?.isAdmin && adminPowerState.invincible) {
+    if (player.id === myId && hasGamePower('invincible')) {
       toast('관리자 보호가 공격을 막았어요!');
       return;
     }
@@ -2145,7 +2271,7 @@
         const distance = Math.hypot(target.x - (oldX + dx * projection), target.y - (oldY + dy * projection));
         if (distance > 20) continue;
         remove = true;
-        if (target.id === myId && accountProfile?.isAdmin && adminPowerState.invincible) {
+        if (target.id === myId && hasGamePower('invincible')) {
           toast('관리자 보호가 공격을 막았어요!');
         } else if (projectile.kind === 'training') {
           if (shieldActiveUntil > time || shieldGraceUntil > time) {
@@ -2312,7 +2438,7 @@
     }
     const currentTagger = [...players.values()].find(player => player.alive && player.tagger && player.hiddenUntil <= time);
     if (currentTagger && time >= practiceTagAllowedAt) for (const player of players.values()) {
-      if (player.id === myId && accountProfile?.isAdmin && adminPowerState.invincible) continue;
+      if (player.id === myId && hasGamePower('invincible')) continue;
       if (player.alive && player.id !== currentTagger.id && Math.hypot(player.x - currentTagger.x, player.y - currentTagger.y) < 26) {
         if (player.id === myId && (shieldActiveUntil > time || shieldGraceUntil > time)) {
           if (shieldActiveUntil > time) {
@@ -2584,7 +2710,7 @@
       if (magnitude > 1) { dx /= magnitude; dy /= magnitude; }
       const boost = me.speedBoostUntil > timestamp ? 1.65 : 1;
       const slow = me.slowedUntil > timestamp ? .42 : 1;
-      const adminSpeed = practiceMode && accountProfile?.isAdmin && adminPowerState.speed ? 2.5 : 1;
+      const adminSpeed = hasGamePower('speed') ? 2.5 : 1;
       const moveSpeed = (me.tagger ? TAGGER_SPEED : RUNNER_SPEED) * boost * slow * adminSpeed;
       const nextX = Math.max(24, Math.min(776, me.x + dx * moveSpeed * dt));
       const nextY = Math.max(34, Math.min(446, me.y + dy * moveSpeed * dt));
@@ -2694,6 +2820,14 @@
     requestAnimationFrame(frame);
   }
 
+  const entryLayoutObserver = new MutationObserver(syncEntryLayout);
+  for (const menu of [$('joinOverlay'), $('matchOverlay')]) {
+    entryLayoutObserver.observe(menu, { attributes:true, attributeFilter:['hidden'] });
+    menu.addEventListener('click', scrollEntryMenu);
+  }
+  $('joinForm').addEventListener('focusin', () => requestAnimationFrame(keepEntryInputVisible));
+  window.addEventListener('resize', syncEntryLayout);
+  window.visualViewport?.addEventListener('resize', keepEntryInputVisible);
   installSocketClient();
   selectMode(selectedMode);
   setLanguage(language);
@@ -2701,5 +2835,16 @@
   updateDeviceControls();
   updatePracticePauseButton();
   restoreAccountSession();
+  // Reconcile account changes after reconnects and in local practice without a socket.
+  let accountRefreshBusy = false;
+  setInterval(async () => {
+    if (!accountProfile || document.hidden || accountRefreshBusy) return;
+    const accountId = accountProfile.id;
+    accountRefreshBusy = true;
+    try {
+      const result = await accountRequest('/api/account/profile');
+      if (accountProfile?.id === accountId) applyAccountProfile(result.profile);
+    } catch {} finally { accountRefreshBusy = false; }
+  }, 10000);
   requestAnimationFrame(frame);
 })();

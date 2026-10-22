@@ -2,10 +2,10 @@
 <html lang="ko">
 <head>
   <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="viewport" content="width=device-width,initial-scale=1,interactive-widget=resizes-content">
   <meta name="theme-color" content="#f8f7fb">
   <title>빙글빙글 술래잡기</title>
-  <link rel="stylesheet" href="style.css?v=23">
+  <link rel="stylesheet" href="style.css?v=26">
 </head>
 <body>
   <main class="shell">
@@ -46,6 +46,11 @@
           </button>
         </div>
         <section class="overlay" id="joinOverlay" aria-label="게임 참가">
+          <nav class="menu-scroll-tools" aria-label="메뉴 스크롤">
+            <button type="button" data-menu-scroll="up">↑ 위로</button>
+            <button type="button" data-menu-scroll="down">↓ 아래로</button>
+            <button type="button" data-menu-scroll="end">입장 버튼으로 ↓</button>
+          </nav>
           <div class="join-panel">
             <div class="spark">✳</div>
             <h2>같이 뛰어볼까요?</h2>
@@ -71,6 +76,11 @@
           </div>
         </section>
         <section class="overlay" id="matchOverlay" aria-label="빠른 매칭" hidden>
+          <nav class="menu-scroll-tools" aria-label="메뉴 스크롤">
+            <button type="button" data-menu-scroll="up">↑ 위로</button>
+            <button type="button" data-menu-scroll="down">↓ 아래로</button>
+            <button type="button" data-menu-scroll="end">시작 버튼으로 ↓</button>
+          </nav>
           <div class="match-panel">
             <div class="spark">⌁</div>
             <h2>상대를 찾고 있어요</h2>
@@ -144,10 +154,32 @@
               </div>
               <p class="admin-power-message" id="adminPowerMessage" role="status">온라인과 연습장에서 사용할 수 있어요.</p>
             </section>
+            <section class="admin-power-section admin-target-section">
+              <h3>특정 계정 관리</h3>
+              <p>대상 아이디를 입력하거나 접속 목록에서 선택하세요. 선택한 계정에만 적용됩니다.</p>
+              <div class="admin-target-row">
+                <label>대상 아이디<input id="adminTargetUsername" maxlength="20" placeholder="플레이어 아이디" autocomplete="off"></label>
+                <button class="account-open" id="adminTargetLoadButton" type="button">계정 조회</button>
+              </div>
+              <p id="adminTargetSummary" role="status">계정을 조회하면 보유 코인과 핵 기능을 볼 수 있어요.</p>
+              <fieldset id="adminTargetPowers" disabled>
+                <legend>이 계정에 허용할 핵</legend>
+                <div class="admin-power-options">
+                  <label><input id="targetSpeedToggle" type="checkbox"><span>스피드 핵 · 2.5배</span></label>
+                  <label><input id="targetInvincibleToggle" type="checkbox"><span>잡힘 방지</span></label>
+                  <label><input id="targetAimToggle" type="checkbox"><span>에임 핵 · 투사체 자동 조준</span></label>
+                </div>
+                <div class="admin-target-actions">
+                  <button class="account-open" id="adminTargetSaveButton" type="button">선택한 핵 적용</button>
+                  <button class="account-open" id="adminTargetRevokeButton" type="button">핵 전부 회수</button>
+                </div>
+              </fieldset>
+              <p id="adminTargetMessage" class="admin-message" role="status"></p>
+            </section>
             <form class="admin-coin-form" id="adminCoinForm">
-              <label>코인 받을 아이디<input id="adminTargetUsername" maxlength="20" required placeholder="플레이어 아이디"></label>
-              <label>지급 코인<input id="adminCoinAmount" type="number" min="1" max="9007199254740991" step="1" value="1000" required></label>
+              <label>코인 수량<input id="adminCoinAmount" type="number" min="1" max="9007199254740991" step="1" value="1000" required></label>
               <button class="join-btn" id="adminCoinSubmitButton" type="submit">코인 지급</button>
+              <button class="account-open" id="adminCoinRevokeButton" type="submit" value="revoke">코인 회수</button>
             </form>
             <p class="admin-message" id="adminCoinMessage" role="status"></p>
             <div class="admin-player-heading">
@@ -201,6 +233,6 @@
     <footer><span>술래가 되면 반짝반짝!</span><span>최대 12명 <i>·</i> 실시간 멀티플레이</span></footer>
   </main>
   <script src="game-config.js" defer></script>
-  <script src="game.js?v=50" defer></script>
+  <script src="game.js?v=52" defer></script>
 </body>
 </html>

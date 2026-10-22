@@ -105,6 +105,7 @@ function accountView(account) {
     coins:account.coins, stage:account.stage,
     owned:account.owned, equipped:account.equipped,
     migrated:account.migrated,
+    grantedPowers:normalizedPowers(account.grantedPowers),
     isAdmin:Boolean(account.isAdmin && account.usernameKey === adminUsernameKey() && adminCredentialTag())
   };
 }
@@ -329,6 +330,7 @@ app.get('/api/admin/players', requireAccount, requireAdmin, (request, response) 
     const account = accountForSocket(socket);
     return {
       socketId:socket.id,
+      accountUsername:account?.username || null,
       username:player?.name || queueEntry?.name || account?.username || '로그인 전 사용자',
       isAdmin:Boolean(account?.isAdmin && account.usernameKey === adminUsernameKey()),
       state:room ? (room.started ? '게임 중' : '대기실') : queueEntry ? '매칭 대기' : '로비 접속',
@@ -358,9 +360,43 @@ app.post('/api/admin/powers', requireAccount, requireAdmin, (request, response) 
   socket.data.adminPowers = powers;
   const room = rooms.get(socket.data.roomCode);
   const player = room?.players.get(socket.id);
-  if (player) player.adminInvincible = powers.invincible;
+  if (player) player.adminInvincible = adminPowersFor(socket).invincible;
   if (room) sendState(room);
   response.json({ powers });
+});
+function findAdminTarget(username) {
+  const key = String(username || '').trim().toLocaleLowerCase('ko-KR');
+  return accounts.find(account => (account.usernameKey || account.username.toLocaleLowerCase('ko-KR')) === key);
+}
+function normalizedPowers(powers) {
+  return { speed:powers?.speed === true, invincible:powers?.invincible === true, aim:powers?.aim === true };
+}
+function notifyAccountUpdate(account) {
+  for (const socket of io.sockets.sockets.values()) {
+    if (socket.data.accountId !== account.id) continue;
+    const room = rooms.get(socket.data.roomCode);
+    const player = room?.players.get(socket.id);
+    if (player) player.adminInvincible = adminPowersFor(socket).invincible;
+    socket.emit('account-profile', { profile:accountView(account) });
+    if (room) sendState(room);
+  }
+}
+app.get('/api/admin/account-powers', requireAccount, requireAdmin, (request, response) => {
+  const account = findAdminTarget(request.query.username);
+  if (!account) return response.status(404).json({ error:'해당 아이디의 계정을 찾을 수 없어요.' });
+  response.json({ profile:accountView(account) });
+});
+app.post('/api/admin/account-powers', requireAccount, requireAdmin, (request, response) => {
+  const account = findAdminTarget(request.body?.username);
+  if (!account) return response.status(404).json({ error:'해당 아이디의 계정을 찾을 수 없어요.' });
+  const powers = request.body?.powers;
+  if (!powers || ['speed','invincible','aim'].some(key => typeof powers[key] !== 'boolean')) {
+    return response.status(400).json({ error:'핵 기능 설정이 올바르지 않아요.' });
+  }
+  account.grantedPowers = normalizedPowers(powers);
+  saveAccounts();
+  notifyAccountUpdate(account);
+  response.json({ profile:accountView(account) });
 });
 app.post('/api/admin/kick', requireAccount, requireAdmin, (request, response) => {
   const socketId = String(request.body?.socketId || '');
@@ -384,10 +420,15 @@ app.post('/api/admin/coins', requireAccount, requireAdmin, (request, response) =
   if (!Number.isSafeInteger(amount) || amount <= 0) return response.status(400).json({ error:'지급할 코인은 1 이상의 정수로 입력해 주세요.' });
   const account = accounts.find(item => (item.usernameKey || item.username.toLocaleLowerCase('ko-KR')) === usernameKey);
   if (!account) return response.status(404).json({ error:'해당 아이디의 계정을 찾을 수 없어요.' });
-  if (!Number.isSafeInteger(account.coins + amount)) return response.status(400).json({ error:'코인 합계가 허용 범위를 넘어요.' });
-  account.coins += amount;
+  const action = request.body?.action || 'grant';
+  if (!['grant','revoke'].includes(action)) return response.status(400).json({ error:'코인 작업이 올바르지 않아요.' });
+  if (action === 'revoke' && amount > account.coins) return response.status(400).json({ error:'보유 코인보다 많이 회수할 수 없어요.' });
+  const delta = action === 'revoke' ? -amount : amount;
+  if (!Number.isSafeInteger(account.coins + delta)) return response.status(400).json({ error:'코인 합계가 허용 범위를 넘어요.' });
+  account.coins += delta;
   saveAccounts();
-  response.json({ granted:amount, profile:accountView(account) });
+  notifyAccountUpdate(account);
+  response.json({ granted:delta, action, amount, profile:accountView(account) });
 });
 app.post('/api/account/migrate', requireAccount, (request, response) => {
   const account = request.account;
@@ -607,9 +648,9 @@ function isAdminSocket(socket) {
   return Boolean(account?.isAdmin && account.usernameKey === adminUsernameKey() && adminCredentialTag());
 }
 function adminPowersFor(socket) {
-  if (!isAdminSocket(socket)) return { speed:false, invincible:false, aim:false };
-  const powers = socket.data.adminPowers || {};
-  return { speed:powers.speed === true, invincible:powers.invincible === true, aim:powers.aim === true };
+  const granted = normalizedPowers(accountForSocket(socket)?.grantedPowers);
+  const own = isAdminSocket(socket) ? normalizedPowers(socket.data.adminPowers) : normalizedPowers(null);
+  return { speed:granted.speed || own.speed, invincible:granted.invincible || own.invincible, aim:granted.aim || own.aim };
 }
 function makePlayer(id, name, spawn, room, socket) {
   const account = socket ? accountForSocket(socket) : null;
