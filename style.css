@@ -56,6 +56,16 @@
 .admin-heading h2{margin:0;font-size:22px}
 .admin-close{margin:0}
 .admin-panel>p{margin:6px 0 11px;color:var(--muted);font-size:11px;line-height:1.5}
+.admin-power-section{margin:10px 0;padding:10px;border:1px solid #efedf5;border-radius:10px;background:#fcfbff}
+.admin-power-section h3{margin:0 0 8px;color:#454255;font-size:12px}
+.admin-power-options{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.admin-power-options label{display:flex;align-items:center;gap:6px;min-width:0;padding:7px;border:1px solid #eeeaf8;border-radius:8px;background:#fff;color:#5c586b;font-size:10px;cursor:pointer}
+.admin-power-options input{accent-color:var(--purple)}
+.admin-power-options input:disabled{cursor:not-allowed}
+.admin-power-options span{min-width:0}
+.admin-power-options kbd{display:inline-block;margin-left:3px;padding:1px 4px;border:1px solid #e6e3ee;border-radius:4px;background:#f8f7fb;color:#817c91;font:9px ui-monospace,monospace;white-space:nowrap}
+.admin-power-message{min-height:14px;margin:7px 1px 0!important;color:#7656e8!important;font-size:10px!important}
+.admin-power-message.error{color:#c35353!important}
 .admin-coin-form{display:grid;grid-template-columns:minmax(0,1fr) 145px auto;align-items:end;gap:8px;padding:10px;border:1px solid #efedf5;border-radius:10px;background:#fcfbff}
 .admin-coin-form label{display:block;color:#747184;font-size:10px}
 .admin-coin-form input{display:block;width:100%;height:34px;margin-top:5px;padding:0 9px;border:1px solid #e6e3ee;border-radius:7px;background:white;color:var(--ink);font:inherit;font-size:12px}
@@ -68,10 +78,14 @@
 .admin-player-heading .account-open{padding:5px 8px;font-size:10px}
 .admin-player-list{display:grid;gap:5px;max-height:150px;overflow:auto;margin:0;padding:0;list-style:none}
 .admin-player-list li{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 9px;border:1px solid #f0eef5;border-radius:8px;background:#fff;font-size:10px}
+.admin-player-info{display:flex;align-items:center;justify-content:space-between;gap:10px;min-width:0;flex:1}
 .admin-player-name{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:700}
 .admin-player-meta{flex:none;color:#898697;text-align:right;font-variant-numeric:tabular-nums}
+.admin-kick-button{flex:none;padding:4px 7px;border:1px solid #f0dede;border-radius:6px;background:#fff7f7;color:#b94444;font:inherit;font-size:9px;cursor:pointer}
+.admin-kick-button:hover:not(:disabled){background:#ffecec}
+.admin-kick-button:disabled{border-color:#eeeaf5;background:#f8f7fb;color:#a5a1af;cursor:default}
 .admin-player-list:empty{display:none}
-@media(max-width:520px){.admin-panel{padding:14px}.admin-coin-form{grid-template-columns:1fr 105px}.admin-coin-form .join-btn{grid-column:1/-1;width:100%}.admin-player-list{max-height:125px}.admin-player-list li{padding:6px 7px}}
+@media(max-width:520px){.admin-panel{padding:14px}.admin-power-options{grid-template-columns:1fr}.admin-coin-form{grid-template-columns:1fr 105px}.admin-coin-form .join-btn{grid-column:1/-1;width:100%}.admin-player-list{max-height:125px}.admin-player-list li{padding:6px 7px}.admin-player-info{align-items:flex-start;flex-direction:column;gap:3px}}
 .password-input-row{display:flex;align-items:stretch;margin-top:5px}
 .account-panel .password-input-row input{flex:1;min-width:0;margin:0;border-radius:7px 0 0 7px}
 .password-visibility-button{flex:none;min-width:54px;margin:0;padding:0 10px;border:1px solid #e6e3ee;border-left:0;border-radius:0 7px 7px 0;background:#f8f7fb;color:#6755ac;font:inherit;font-size:11px;cursor:pointer}
@@ -101,12 +115,12 @@
 .device-setup-options button:hover,.device-setup-options button:focus-visible{border-color:#a995ff;background:#f6f2ff;outline:none}
 .device-setup-options strong{font-size:17px}.device-setup-options small{color:var(--muted);font-size:11px}
 .touch-controls{position:absolute;z-index:1;left:12px;right:12px;bottom:12px;display:flex;align-items:flex-end;justify-content:space-between;gap:10px;pointer-events:none;touch-action:none;user-select:none;-webkit-user-select:none}
-.touch-dpad{display:grid;grid-template:repeat(3,48px)/repeat(3,48px);gap:4px}
-.touch-dpad button{width:48px;height:48px;border:1px solid #dcd6eb;border-radius:13px;background:#ffffffd9;color:#5c4a9c;font:700 22px system-ui,sans-serif;box-shadow:0 3px 9px #30205b1c;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none}
-.touch-dpad button:nth-child(1){grid-area:1/2}.touch-dpad button:nth-child(2){grid-area:2/1}.touch-dpad button:nth-child(3){grid-area:2/3}.touch-dpad button:nth-child(4){grid-area:3/2}
-.touch-dpad button:active{background:#e9e1ff;transform:scale(.96)}
+.touch-joystick{position:relative;width:116px;height:116px;flex:none;border:1px solid #ffffffb8;border-radius:50%;background:radial-gradient(circle at 35% 28%,#ffffff66,#7865a844 72%);box-shadow:inset 0 2px 12px #21184b26,0 3px 14px #30205b24;pointer-events:auto;touch-action:none;user-select:none;-webkit-user-select:none}
+.touch-joystick::after{position:absolute;inset:12px;border:1px solid #ffffff42;border-radius:50%;content:"";pointer-events:none}
+.touch-joystick-knob{position:absolute;left:50%;top:50%;width:48px;height:48px;transform:translate(calc(-50% + var(--joystick-x,0px)),calc(-50% + var(--joystick-y,0px)));border:1px solid #ffffffd9;border-radius:50%;background:#ffffff8c;box-shadow:0 2px 10px #30205b38,inset 0 1px 2px #ffffffa8;pointer-events:none;will-change:transform}
+.touch-joystick.active .touch-joystick-knob{background:#ffffffb8}
 .mobile-skill-button{width:78px;height:78px;flex:none;display:grid;place-content:center;justify-items:center;gap:2px;border:2px solid #fff;border-radius:22px;background:linear-gradient(145deg,#8769f6,#6848d8);color:#fff;font:700 12px system-ui,sans-serif;box-shadow:0 4px 13px #33205b45;pointer-events:auto;touch-action:manipulation;user-select:none;-webkit-user-select:none}
 .mobile-skill-button[hidden]{display:none!important}.mobile-skill-button:active{transform:scale(.95);background:linear-gradient(145deg,#7657e8,#5938c5)}.mobile-skill-button:disabled{opacity:.68}
 .mobile-skill-icon{font-size:22px;line-height:1}.mobile-skill-button small{font-size:9px;font-weight:500;line-height:1.1;opacity:.9}
 #keyboardControls[hidden]{display:none!important}
-@media(max-width:650px){.brand>span:last-child{display:none}.topbar-tools{gap:4px}.account-open{padding:5px 6px;font-size:9px}.device-setup-panel{padding:22px 18px}.touch-controls{left:8px;right:8px;bottom:8px}.touch-dpad{grid-template:repeat(3,42px)/repeat(3,42px)}.touch-dpad button{width:42px;height:42px;border-radius:12px}.mobile-skill-button{width:68px;height:68px;border-radius:20px}.device-setup-panel h2{font-size:20px}}
+@media(max-width:650px){.brand>span:last-child{display:none}.topbar-tools{gap:4px}.account-open{padding:5px 6px;font-size:9px}.device-setup-panel{padding:22px 18px}.touch-controls{left:8px;right:8px;bottom:8px}.touch-joystick{width:104px;height:104px}.touch-joystick-knob{width:44px;height:44px}.touch-joystick::after{inset:10px}.mobile-skill-button{width:68px;height:68px;border-radius:20px}.device-setup-panel h2{font-size:20px}}

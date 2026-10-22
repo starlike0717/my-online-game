@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <meta name="theme-color" content="#f8f7fb">
   <title>빙글빙글 술래잡기</title>
-  <link rel="stylesheet" href="style.css?v=21">
+  <link rel="stylesheet" href="style.css?v=23">
 </head>
 <body>
   <main class="shell">
@@ -36,11 +36,8 @@
       <div class="arena-wrap">
         <canvas id="arena" width="800" height="480" tabindex="0" aria-label="술래잡기 게임 화면"></canvas>
         <div class="touch-controls" id="touchControls" aria-label="터치 이동 조작" hidden>
-          <div class="touch-dpad">
-            <button type="button" data-touch-direction="up" aria-label="위로">↑</button>
-            <button type="button" data-touch-direction="left" aria-label="왼쪽으로">←</button>
-            <button type="button" data-touch-direction="right" aria-label="오른쪽으로">→</button>
-            <button type="button" data-touch-direction="down" aria-label="아래로">↓</button>
+          <div class="touch-joystick" id="touchJoystick" role="application" aria-label="가상 조이스틱">
+            <div class="touch-joystick-knob" id="touchJoystickKnob" aria-hidden="true"></div>
           </div>
           <button type="button" class="mobile-skill-button" id="mobileSkillButton" aria-label="스킬 사용" hidden>
             <span class="mobile-skill-icon" id="mobileSkillIcon" aria-hidden="true">✦</span>
@@ -138,6 +135,15 @@
               <button type="button" class="match-cancel admin-close" id="adminCloseButton">닫기</button>
             </div>
             <p>계정에 코인을 지급하고 현재 접속한 플레이어를 확인해요.</p>
+            <section class="admin-power-section" aria-label="관리자 능력">
+              <h3>관리자 능력</h3>
+              <div class="admin-power-options">
+                <label><input id="adminSpeedToggle" type="checkbox" disabled><span>스피드 핵 · 2.5배 <kbd>Shift+1</kbd></span></label>
+                <label><input id="adminInvincibleToggle" type="checkbox" disabled><span>잡힘 방지 <kbd>Shift+2</kbd></span></label>
+                <label><input id="adminAimToggle" type="checkbox" disabled><span>에임 핵 · 투사체 자동 조준 <kbd>Shift+3</kbd></span></label>
+              </div>
+              <p class="admin-power-message" id="adminPowerMessage" role="status">온라인과 연습장에서 사용할 수 있어요.</p>
+            </section>
             <form class="admin-coin-form" id="adminCoinForm">
               <label>코인 받을 아이디<input id="adminTargetUsername" maxlength="20" required placeholder="플레이어 아이디"></label>
               <label>지급 코인<input id="adminCoinAmount" type="number" min="1" max="9007199254740991" step="1" value="1000" required></label>
@@ -195,6 +201,6 @@
     <footer><span>술래가 되면 반짝반짝!</span><span>최대 12명 <i>·</i> 실시간 멀티플레이</span></footer>
   </main>
   <script src="game-config.js" defer></script>
-  <script src="game.js?v=47" defer></script>
+  <script src="game.js?v=50" defer></script>
 </body>
 </html>

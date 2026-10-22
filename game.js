@@ -13,7 +13,7 @@
     '연결 확인 중':'Checking connection', '로그인':'Log in', '친구들과 뛰어놀 시간':'Time to run with friends',
     '빙글빙글':'Stickman', '술래잡기':'Tag', '술래를 피해 달려요. 10초마다 술래가 바뀌어요!':'Run from the tagger. The tagger changes every 10 seconds!',
     '복사':'Copy', '연습 진행':'Practice stage', '코인':'Coins', '다음 술래 교대':'Next tagger swap', '남은 플레이어':'Players left',
-    '술래잡기 게임 화면':'Tag game arena', '게임 참가':'Join game', '같이 뛰어볼까요?':'Ready to play?',
+    '술래잡기 게임 화면':'Tag game arena', '게임 참가':'Join game', '터치 이동 조작':'Touch movement controls', '가상 조이스틱':'Virtual joystick', '같이 뛰어볼까요?':'Ready to play?',
     '이름과 방 코드를 입력해 주세요.':'Enter your name and room code.', '온라인':'Online', '매칭':'Matchmaking', '연습':'Practice',
     '단계 도전':'Stage challenge', '특수 훈련장':'Special training', '1단계 · 0 코인':'Stage 1 · 0 coins',
     '상점':'Shop', '내 이름':'Your name', '방 코드':'Room code', '게임 시작':'Start game', '같은 방 코드를 친구와 공유해 보세요':'Share your room code with friends',
@@ -26,6 +26,14 @@
     '관리자':'Admin', '코인 받을 아이디':'Account to credit', '지급 코인':'Coins to grant', '코인 지급':'Grant coins',
     '접속 중인 플레이어':'Players online', '새로고침':'Refresh', '목록을 불러오는 중…':'Loading players…',
     '계정에 코인을 지급하고 현재 접속한 플레이어를 확인해요.':'Grant coins to accounts and see who is connected.',
+    '관리자 능력':'Admin powers', '스피드 핵 · 2.5배':'Speed hack · 2.5×', '잡힘 방지':'Tag immunity',
+    '에임 핵 · 투사체 자동 조준':'Aim hack · auto-aim projectiles', '온라인과 연습장에서 사용할 수 있어요.':'Available in online and practice games.', '연습장에서도 사용할 수 있어요.':'Available in practice games.', '관리자 보호가 공격을 막았어요!':'Admin protection blocked the attack!',
+    '관리자 게임 서버에 연결되지 않았어요.':'The game server is not connected.', '관리자 능력 설정을 저장했어요.':'Admin power settings saved.',
+    '관리자 능력 저장 중…':'Saving admin powers…', '추방':'Kick', '관리자':'Admin', '나':'Me',
+    '추방 중…':'Kicking…', '플레이어를 추방했어요.':'Player kicked.', '관리자에 의해 접속이 종료되었어요.':'You were disconnected by an administrator.',
+    '이 플레이어를 추방할까요?':'Kick this player?', '관리자 연결을 찾을 수 없어요.':'Could not find the admin connection.',
+    '플레이어 연결을 찾을 수 없어요.':'Could not find that player connection.', '관리자 본인의 연결은 추방할 수 없어요.':'You cannot kick your own admin connection.',
+    '관리자는 추방할 수 없어요.':'Admins cannot be kicked.', 'Shift+1 속도 · Shift+2 잡힘 방지 · Shift+3 에임 핵':'Shift+1 speed · Shift+2 tag immunity · Shift+3 aim hack',
     '플레이어 아이디':'Player username', '관리자 계정이 서버에 설정되지 않았어요.':'Admin login is not configured on the server.',
     '관리자 아이디는 관리자 로그인만 사용할 수 있어요.':'That username is reserved for admin login.',
     '관리자 권한이 필요해요.':'Admin access is required.', '코인을 받을 아이디를 입력해 주세요.':'Enter a username to receive coins.',
@@ -658,6 +666,7 @@
     $('adminCoinMessage').classList.remove('error');
     $('adminOverlay').hidden = false;
     loadAdminPlayers();
+    loadAdminPowers();
     if (!adminPlayersRefreshTimer) adminPlayersRefreshTimer = setInterval(() => {
       if (!accountProfile?.isAdmin || $('adminOverlay').hidden) return;
       loadAdminPlayers();
@@ -686,8 +695,129 @@
       const room = player.roomCode ? `${language === 'en' ? 'Room' : '방'} ${player.roomCode}` : '';
       const connected = language === 'en' ? `${duration} connected` : `${duration} 접속`;
       meta.textContent = [state, room, connected].filter(Boolean).join(' · ');
-      row.append(name, meta);
+      const info = document.createElement('div');
+      info.className = 'admin-player-info';
+      info.append(name, meta);
+      const kick = document.createElement('button');
+      kick.type = 'button';
+      kick.className = 'admin-kick-button';
+      kick.dataset.socketId = player.socketId || '';
+      kick.dataset.playerName = player.username || '';
+      const protectedPlayer = player.isAdmin || player.socketId === socket?.id;
+      kick.disabled = protectedPlayer;
+      kick.textContent = player.isAdmin ? '관리자' : protectedPlayer ? '나' : '추방';
+      if (!player.socketId) kick.disabled = true;
+      row.append(info, kick);
       list.append(row);
+    }
+  }
+  const ADMIN_POWER_INPUTS = { speed:'adminSpeedToggle', invincible:'adminInvincibleToggle', aim:'adminAimToggle' };
+  let adminPowerState = { speed:false, invincible:false, aim:false };
+  let adminPowerSaveBusy = false;
+  function writeAdminPowerInputs(powers = adminPowerState) {
+    for (const [power, id] of Object.entries(ADMIN_POWER_INPUTS)) $(id).checked = powers[power] === true;
+  }
+  function setAdminPowerInputsDisabled(disabled) {
+    for (const id of Object.values(ADMIN_POWER_INPUTS)) $(id).disabled = disabled || (!socket?.connected && !(practiceMode && accountProfile?.isAdmin));
+  }
+  function setAdminPowerMessage(message, error = false) {
+    $('adminPowerMessage').textContent = message;
+    $('adminPowerMessage').classList.toggle('error', error);
+  }
+  async function loadAdminPowers() {
+    if (!accountProfile?.isAdmin) return;
+    if (practiceMode) {
+      writeAdminPowerInputs();
+      setAdminPowerInputsDisabled(false);
+      setAdminPowerMessage('연습장에서도 사용할 수 있어요.');
+      return;
+    }
+    if (!socket?.connected) {
+      setAdminPowerInputsDisabled(true);
+      setAdminPowerMessage('관리자 게임 서버에 연결되지 않았어요.', true);
+      return;
+    }
+    setAdminPowerInputsDisabled(true);
+    setAdminPowerMessage('온라인과 연습장에서 사용할 수 있어요.');
+    let loaded = false;
+    try {
+      const result = await accountRequest(`/api/admin/powers?socketId=${encodeURIComponent(socket.id)}`);
+      adminPowerState = { speed:!!result.powers?.speed, invincible:!!result.powers?.invincible, aim:!!result.powers?.aim };
+      writeAdminPowerInputs();
+      loaded = true;
+      setAdminPowerMessage('온라인과 연습장에서 사용할 수 있어요.');
+    } catch (error) {
+      setAdminPowerMessage(translateText(error.message), true);
+    } finally {
+      setAdminPowerInputsDisabled(!loaded || !socket?.connected);
+    }
+  }
+  async function saveAdminPowers() {
+    if (!accountProfile?.isAdmin || adminPowerSaveBusy) return;
+    if (!socket?.connected && !practiceMode) {
+      writeAdminPowerInputs();
+      setAdminPowerMessage('관리자 게임 서버에 연결되지 않았어요.', true);
+      return;
+    }
+    const nextPowers = Object.fromEntries(Object.entries(ADMIN_POWER_INPUTS).map(([power, id]) => [power, $(id).checked]));
+    const changedPower = Object.keys(nextPowers).find(power => nextPowers[power] !== adminPowerState[power]);
+    if (practiceMode) {
+      adminPowerState = nextPowers;
+      writeAdminPowerInputs();
+      setAdminPowerInputsDisabled(false);
+      setAdminPowerMessage('연습장에서도 사용할 수 있어요.');
+      if (changedPower) {
+        const labels = language === 'en'
+          ? { speed:'Speed hack', invincible:'Tag immunity', aim:'Aim hack' }
+          : { speed:'스피드 핵', invincible:'잡힘 방지', aim:'에임 핵' };
+        toast(`${labels[changedPower]} ${nextPowers[changedPower] ? (language === 'en' ? 'on' : '켜짐') : (language === 'en' ? 'off' : '꺼짐')}`);
+      }
+      return;
+    }
+    adminPowerSaveBusy = true;
+    setAdminPowerInputsDisabled(true);
+    setAdminPowerMessage('관리자 능력 저장 중…');
+    try {
+      const result = await accountRequest('/api/admin/powers', 'POST', { socketId:socket.id, powers:nextPowers });
+      adminPowerState = { speed:!!result.powers.speed, invincible:!!result.powers.invincible, aim:!!result.powers.aim };
+      writeAdminPowerInputs();
+      setAdminPowerMessage('관리자 능력 설정을 저장했어요.');
+      if (changedPower) {
+        const labels = language === 'en'
+          ? { speed:'Speed hack', invincible:'Tag immunity', aim:'Aim hack' }
+          : { speed:'스피드 핵', invincible:'잡힘 방지', aim:'에임 핵' };
+        toast(`${labels[changedPower]} ${nextPowers[changedPower] ? (language === 'en' ? 'on' : '켜짐') : (language === 'en' ? 'off' : '꺼짐')}`);
+      }
+    } catch (error) {
+      writeAdminPowerInputs();
+      setAdminPowerMessage(translateText(error.message), true);
+    } finally {
+      adminPowerSaveBusy = false;
+      setAdminPowerInputsDisabled(!socket?.connected);
+    }
+  }
+  function toggleAdminPower(power) {
+    const inputId = ADMIN_POWER_INPUTS[power];
+    if (!accountProfile?.isAdmin || !inputId || adminPowerSaveBusy || (!socket?.connected && !practiceMode)) return;
+    $(inputId).checked = !$(inputId).checked;
+    saveAdminPowers();
+  }
+  async function kickAdminPlayer(button) {
+    if (!accountProfile?.isAdmin || !button?.dataset.socketId || button.disabled) return;
+    const playerName = button.dataset.playerName || '플레이어';
+    const confirmed = window.confirm(language === 'en' ? `Kick ${playerName}?` : `${playerName}님을 추방할까요?`);
+    if (!confirmed) return;
+    button.disabled = true;
+    button.textContent = '추방 중…';
+    $('adminPlayerMessage').classList.remove('error');
+    try {
+      await accountRequest('/api/admin/kick', 'POST', { socketId:button.dataset.socketId });
+      $('adminPlayerMessage').textContent = '플레이어를 추방했어요.';
+      loadAdminPlayers();
+    } catch (error) {
+      $('adminPlayerMessage').textContent = translateText(error.message);
+      $('adminPlayerMessage').classList.add('error');
+      loadAdminPlayers();
     }
   }
   let adminPlayersRequestBusy = false;
@@ -738,7 +868,10 @@
   const players = new Map();
   const held = new Set();
   const keyboardHeld = new Set();
-  const touchPointers = new Map();
+  const joystick = $('touchJoystick');
+  const joystickKnob = $('touchJoystickKnob');
+  let joystickPointerId = null;
+  let joystickVector = { x: 0, y: 0 };
   const palette = ['#8063e8','#f17e79','#48b995','#e4a43d','#4e9bd2','#dc71a8','#7983d8','#68aa66','#e47d54','#49a9a8','#bb76d7','#b6905e'];
   const movementKeys = { KeyW:'up', ArrowUp:'up', KeyS:'down', ArrowDown:'down', KeyA:'left', ArrowLeft:'left', KeyD:'right', ArrowRight:'right' };
   const DEVICE_MODE_KEY = 'tag-stickmen-device-mode-v1';
@@ -813,15 +946,26 @@
   function refreshHeldDirections() {
     held.clear();
     for (const direction of keyboardHeld) held.add(direction);
-    for (const direction of touchPointers.values()) held.add(direction);
+  }
+  function resetJoystick(releaseCapture = false) {
+    const activePointerId = joystickPointerId;
+    joystickPointerId = null;
+    joystickVector = { x: 0, y: 0 };
+    joystick.classList.remove('active');
+    joystickKnob.style.setProperty('--joystick-x', '0px');
+    joystickKnob.style.setProperty('--joystick-y', '0px');
+    if (releaseCapture && activePointerId !== null) {
+      try { joystick.releasePointerCapture(activePointerId); } catch {}
+    }
   }
   function clearMovementInputs() {
     keyboardHeld.clear();
-    touchPointers.clear();
+    resetJoystick(true);
     held.clear();
   }
   function updateDeviceControls() {
     $('touchControls').hidden = deviceMode !== 'mobile' || (!practiceMode && !myId) || matchmaking;
+    if ($('touchControls').hidden) resetJoystick(true);
     $('keyboardControls').hidden = deviceMode === 'mobile';
     $('deviceSettingsButton').disabled = !!myId && !practiceMode;
     $('weaponControlTip').textContent = deviceMode === 'mobile'
@@ -1246,9 +1390,19 @@
         reconnection:true, timeout:5000, withCredentials:true,
         auth:{ token:readAccountToken() }
       });
-      socket.on('connect', () => connection(true, '서버 연결됨'));
+      socket.on('connect', () => {
+        connection(true, '서버 연결됨');
+        if (accountProfile?.isAdmin && !$('adminOverlay').hidden) loadAdminPowers();
+      });
       socket.on('disconnect', () => {
         connection(false, '서버 연결 끊김');
+        if (!practiceMode) {
+          adminPowerState = { speed:false, invincible:false, aim:false };
+          writeAdminPowerInputs();
+          setAdminPowerInputsDisabled(true);
+        } else {
+          setAdminPowerInputsDisabled(false);
+        }
         if (matchmaking) {
           matchmaking = false;
           $('matchOverlay').hidden = true;
@@ -1266,6 +1420,10 @@
           $('matchOverlay').hidden = true;
           $('joinOverlay').hidden = false;
         }
+      });
+      socket.on('admin-kicked', () => {
+        toast('관리자에 의해 접속이 종료되었어요.');
+        returnToLobby();
       });
       socket.on('joined', data => {
         myId = data.id;
@@ -1372,6 +1530,11 @@
   $('adminCloseButton').addEventListener('click', closeAdminPanel);
   $('adminRefreshButton').addEventListener('click', loadAdminPlayers);
   $('adminCoinForm').addEventListener('submit', grantAdminCoins);
+  for (const id of Object.values(ADMIN_POWER_INPUTS)) $(id).addEventListener('change', saveAdminPowers);
+  $('adminPlayerList').addEventListener('click', event => {
+    const button = event.target.closest('.admin-kick-button');
+    if (button) kickAdminPlayer(button);
+  });
   $('adminOverlay').addEventListener('click', event => {
     if (event.target === $('adminOverlay')) closeAdminPanel();
   });
@@ -1537,6 +1700,14 @@
   function handleKey(event, down) {
     const editing = event.target?.matches?.('input, textarea, [contenteditable="true"]');
     if (editing) return;
+    if (down && !event.repeat && accountProfile?.isAdmin && event.shiftKey && !event.altKey && !event.ctrlKey && !event.metaKey) {
+      const adminPower = { Digit1:'speed', Digit2:'invincible', Digit3:'aim' }[event.code];
+      if (adminPower) {
+        event.preventDefault();
+        toggleAdminPower(adminPower);
+        return;
+      }
+    }
     if ((practiceMode || myId) && down && !event.repeat) {
       if (event.code === 'KeyQ') {
         event.preventDefault();
@@ -1554,21 +1725,42 @@
   window.addEventListener('keyup', event => handleKey(event, false), true);
   window.addEventListener('blur', clearMovementInputs);
   document.addEventListener('visibilitychange', () => { if (document.hidden) clearMovementInputs(); });
-  for (const button of document.querySelectorAll('[data-touch-direction]')) {
-    button.addEventListener('pointerdown', event => {
-      event.preventDefault();
-      try { button.setPointerCapture(event.pointerId); } catch {}
-      touchPointers.set(event.pointerId, button.dataset.touchDirection);
-      refreshHeldDirections();
-    });
-    const releaseTouch = event => {
-      touchPointers.delete(event.pointerId);
-      refreshHeldDirections();
-    };
-    button.addEventListener('pointerup', releaseTouch);
-    button.addEventListener('pointercancel', releaseTouch);
-    button.addEventListener('lostpointercapture', releaseTouch);
+  joystick.addEventListener('pointerdown', event => {
+    if ($('touchControls').hidden || joystickPointerId !== null) return;
+    event.preventDefault();
+    joystickPointerId = event.pointerId;
+    joystick.classList.add('active');
+    try { joystick.setPointerCapture(event.pointerId); } catch {}
+    moveJoystickPointer(event);
+  });
+  function moveJoystickPointer(event) {
+    if (event.pointerId !== joystickPointerId) return;
+    event.preventDefault();
+    const bounds = joystick.getBoundingClientRect();
+    const knobBounds = joystickKnob.getBoundingClientRect();
+    const radius = Math.max(1, Math.min(bounds.width, bounds.height) / 2 - Math.min(knobBounds.width, knobBounds.height) / 2 - 3);
+    let offsetX = event.clientX - (bounds.left + bounds.width / 2);
+    let offsetY = event.clientY - (bounds.top + bounds.height / 2);
+    const distance = Math.hypot(offsetX, offsetY);
+    if (distance > radius) {
+      offsetX = offsetX / distance * radius;
+      offsetY = offsetY / distance * radius;
+    }
+    const clampedDistance = Math.hypot(offsetX, offsetY);
+    joystickVector = clampedDistance < 5
+      ? { x: 0, y: 0 }
+      : { x: offsetX / radius, y: offsetY / radius };
+    joystickKnob.style.setProperty('--joystick-x', `${offsetX}px`);
+    joystickKnob.style.setProperty('--joystick-y', `${offsetY}px`);
   }
+  function releaseJoystickPointer(event) {
+    if (event.pointerId !== joystickPointerId) return;
+    resetJoystick();
+  }
+  joystick.addEventListener('pointermove', moveJoystickPointer);
+  joystick.addEventListener('pointerup', releaseJoystickPointer);
+  joystick.addEventListener('pointercancel', releaseJoystickPointer);
+  joystick.addEventListener('lostpointercapture', releaseJoystickPointer);
   canvas.addEventListener('pointerdown', () => canvas.focus({ preventScroll: true }));
   canvas.addEventListener('contextmenu', event => {
     if (!practiceMode && !myId) return;
@@ -1610,6 +1802,15 @@
     toast('방패를 펼쳤어요! 공격을 막을 수 있어요.');
     updatePracticeActions(now);
   }
+  function getPracticeProjectileAim(player) {
+    const canAim = practiceMode && accountProfile?.isAdmin && adminPowerState.aim;
+    const target = canAim
+      ? [...players.values()].filter(other => other.alive && other.id !== player.id)
+        .sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y))[0]
+      : null;
+    const angle = target ? Math.atan2(target.y - player.y, target.x - player.x) : Number.isFinite(player.angle) ? player.angle : 0;
+    return { angle, targetId:target?.id || null };
+  }
   function launchPracticePunch() {
     if (!practiceMode || gameOver || !$('shopOverlay').hidden) return;
     if (practiceProfile.equipped !== 'punch') { toast('상점에서 날아가는 주먹을 구매하고 장착해 주세요.'); return; }
@@ -1617,11 +1818,11 @@
     if (now < specialCooldownUntil) { toast('주먹이 아직 충전 중이에요.'); return; }
     const player = players.get(myId);
     if (!player?.alive || gameOver) return;
-    const angle = Number.isFinite(player.angle) ? player.angle : 0;
-    const speed = 540;
+    const { angle, targetId } = getPracticeProjectileAim(player);
+    const speed = targetId ? 1000 : 540;
     practiceProjectiles.push({
       kind:'player', ownerId:myId, x:player.x + Math.cos(angle) * 16, y:player.y + Math.sin(angle) * 16,
-      vx:Math.cos(angle) * speed, vy:Math.sin(angle) * speed, life:1.35
+      vx:Math.cos(angle) * speed, vy:Math.sin(angle) * speed, life:targetId ? 4 : 1.35, targetId
     });
     specialCooldownUntil = now + SPECIAL_ITEMS.punch.cooldown;
     toast('날아가는 주먹 발사!');
@@ -1644,12 +1845,12 @@
     const ready = checkSpecialReady(item);
     if (!ready) return;
     const { player, now } = ready;
-    const angle = Number.isFinite(player.angle) ? player.angle : 0;
-    const speed = kind === 'boomerang' ? 470 : 430;
+    const { angle, targetId } = getPracticeProjectileAim(player);
+    const speed = targetId ? 1000 : kind === 'boomerang' ? 470 : 430;
     practiceProjectiles.push({
       kind, ownerId:myId, x:player.x + Math.cos(angle) * 16, y:player.y + Math.sin(angle) * 16,
       vx:Math.cos(angle) * speed, vy:Math.sin(angle) * speed,
-      life:kind === 'boomerang' ? 2.4 : 1.65, age:0, returning:false
+      life:kind === 'boomerang' ? 2.4 : targetId ? 4 : 1.65, age:0, returning:false, targetId
     });
     specialCooldownUntil = now + SPECIAL_ITEMS[item].cooldown;
     toast(kind === 'boomerang' ? '부메랑을 던졌어요. 돌아오는 길도 조심하세요!' : '빙결탄 발사! 맞은 봇이 느려져요.');
@@ -1751,10 +1952,10 @@
     const ready = checkSpecialReady('gravity');
     if (!ready) return;
     const { player, now } = ready;
-    const angle = Number.isFinite(player.angle) ? player.angle : 0;
+    const { angle, targetId } = getPracticeProjectileAim(player);
     practiceProjectiles.push({
       kind:'gravity', ownerId:myId, x:player.x + Math.cos(angle) * 16, y:player.y + Math.sin(angle) * 16,
-      vx:Math.cos(angle) * 360, vy:Math.sin(angle) * 360, life:1.5, age:0
+      vx:Math.cos(angle) * (targetId ? 1000 : 360), vy:Math.sin(angle) * (targetId ? 1000 : 360), life:targetId ? 4 : 1.5, age:0, targetId
     });
     specialCooldownUntil = now + SPECIAL_ITEMS.gravity.cooldown;
     toast('중력 구슬 발사! 닿은 곳에 중력장이 생겨요.');
@@ -1855,6 +2056,10 @@
   }
   function eliminatePracticePlayer(player, time, reason = '잡혀') {
     if (!player.alive) return;
+    if (player.id === myId && accountProfile?.isAdmin && adminPowerState.invincible) {
+      toast('관리자 보호가 공격을 막았어요!');
+      return;
+    }
     const wasTagger = player.tagger;
     player.alive = false;
     player.tagger = false;
@@ -1897,27 +2102,52 @@
       const projectile = practiceProjectiles[index];
       projectile.age = (projectile.age || 0) + dt;
       if (projectile.kind === 'boomerang') {
-        if (!projectile.returning && projectile.age >= .78) projectile.returning = true;
-        if (projectile.returning) {
-          const owner = players.get(projectile.ownerId);
-          if (owner) {
-            const dx = owner.x - projectile.x, dy = owner.y - projectile.y;
-            const distance = Math.hypot(dx, dy);
-            if (distance < 18) { practiceProjectiles.splice(index, 1); continue; }
-            projectile.vx = dx / distance * 560;
-            projectile.vy = dy / distance * 560;
-          }
+        if (!projectile.returning && !projectile.targetId && projectile.age >= .78) {
+          projectile.returning = true;
+          projectile.targetId = null;
         }
       }
+      if (projectile.targetId && !projectile.returning) {
+        let target = players.get(projectile.targetId);
+        if (!target?.alive || target.id === projectile.ownerId) {
+          target = [...players.values()].filter(other => other.alive && other.id !== projectile.ownerId)
+            .sort((a, b) => Math.hypot(a.x - projectile.x, a.y - projectile.y) - Math.hypot(b.x - projectile.x, b.y - projectile.y))[0] || null;
+          projectile.targetId = target?.id || null;
+        }
+        if (target) {
+          const dx = target.x - projectile.x, dy = target.y - projectile.y;
+          const distance = Math.hypot(dx, dy) || 1;
+          const speed = Math.max(1000, Math.hypot(projectile.vx, projectile.vy));
+          projectile.vx = dx / distance * speed;
+          projectile.vy = dy / distance * speed;
+        }
+      }
+      if (projectile.returning) {
+        const owner = players.get(projectile.ownerId);
+        if (owner) {
+          const dx = owner.x - projectile.x, dy = owner.y - projectile.y;
+          const distance = Math.hypot(dx, dy);
+          if (distance < 18) { practiceProjectiles.splice(index, 1); continue; }
+          projectile.vx = dx / distance * 560;
+          projectile.vy = dy / distance * 560;
+        }
+      }
+      const oldX = projectile.x, oldY = projectile.y;
       projectile.x += projectile.vx * dt;
       projectile.y += projectile.vy * dt;
       projectile.life -= dt;
       let remove = projectile.life <= 0 || projectile.x < 0 || projectile.x > 800 || projectile.y < 0 || projectile.y > 480;
       if (!remove) for (const target of players.values()) {
         if (!target.alive || target.id === projectile.ownerId) continue;
-        if (Math.hypot(target.x - projectile.x, target.y - projectile.y) > 20) continue;
+        const dx = projectile.x - oldX, dy = projectile.y - oldY;
+        const lengthSquared = dx * dx + dy * dy;
+        const projection = lengthSquared ? Math.max(0, Math.min(1, ((target.x - oldX) * dx + (target.y - oldY) * dy) / lengthSquared)) : 0;
+        const distance = Math.hypot(target.x - (oldX + dx * projection), target.y - (oldY + dy * projection));
+        if (distance > 20) continue;
         remove = true;
-        if (projectile.kind === 'training') {
+        if (target.id === myId && accountProfile?.isAdmin && adminPowerState.invincible) {
+          toast('관리자 보호가 공격을 막았어요!');
+        } else if (projectile.kind === 'training') {
           if (shieldActiveUntil > time || shieldGraceUntil > time) {
             shieldActiveUntil = 0;
             shieldGraceUntil = time + 700;
@@ -2082,6 +2312,7 @@
     }
     const currentTagger = [...players.values()].find(player => player.alive && player.tagger && player.hiddenUntil <= time);
     if (currentTagger && time >= practiceTagAllowedAt) for (const player of players.values()) {
+      if (player.id === myId && accountProfile?.isAdmin && adminPowerState.invincible) continue;
       if (player.alive && player.id !== currentTagger.id && Math.hypot(player.x - currentTagger.x, player.y - currentTagger.y) < 26) {
         if (player.id === myId && (shieldActiveUntil > time || shieldGraceUntil > time)) {
           if (shieldActiveUntil > time) {
@@ -2344,15 +2575,17 @@
     const me = players.get(myId);
     const shopOpen = !$('shopOverlay').hidden || (practicePaused && practiceMode);
     if (practiceMode && !shopOpen) updatePracticeEffects(timestamp);
-    if (me?.alive && !gameOver && held.size && !shopOpen && me.frozenUntil <= timestamp) {
+    const joystickMoving = Math.hypot(joystickVector.x, joystickVector.y) > 0;
+    if (me?.alive && !gameOver && (held.size || joystickMoving) && !shopOpen && me.frozenUntil <= timestamp) {
       const oldX = me.x, oldY = me.y;
-      let dx = Number(held.has('right')) - Number(held.has('left'));
-      let dy = Number(held.has('down')) - Number(held.has('up'));
+      let dx = joystickVector.x + Number(held.has('right')) - Number(held.has('left'));
+      let dy = joystickVector.y + Number(held.has('down')) - Number(held.has('up'));
       const magnitude = Math.hypot(dx, dy) || 1;
-      dx /= magnitude; dy /= magnitude;
+      if (magnitude > 1) { dx /= magnitude; dy /= magnitude; }
       const boost = me.speedBoostUntil > timestamp ? 1.65 : 1;
       const slow = me.slowedUntil > timestamp ? .42 : 1;
-      const moveSpeed = (me.tagger ? TAGGER_SPEED : RUNNER_SPEED) * boost * slow;
+      const adminSpeed = practiceMode && accountProfile?.isAdmin && adminPowerState.speed ? 2.5 : 1;
+      const moveSpeed = (me.tagger ? TAGGER_SPEED : RUNNER_SPEED) * boost * slow * adminSpeed;
       const nextX = Math.max(24, Math.min(776, me.x + dx * moveSpeed * dt));
       const nextY = Math.max(34, Math.min(446, me.y + dy * moveSpeed * dt));
       if (!me.tagger || me.phaseUntil > timestamp) { me.x = nextX; me.y = nextY; }

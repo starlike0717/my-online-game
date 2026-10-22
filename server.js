@@ -328,13 +328,53 @@ app.get('/api/admin/players', requireAccount, requireAdmin, (request, response) 
     const queueEntry = matchmakingQueue.get(socket.id);
     const account = accountForSocket(socket);
     return {
+      socketId:socket.id,
       username:player?.name || queueEntry?.name || account?.username || '로그인 전 사용자',
+      isAdmin:Boolean(account?.isAdmin && account.usernameKey === adminUsernameKey()),
       state:room ? (room.started ? '게임 중' : '대기실') : queueEntry ? '매칭 대기' : '로비 접속',
       roomCode,
       connectedAt:Number.isFinite(socket.data.connectedAt) ? socket.data.connectedAt : now
     };
   }).sort((a, b) => a.connectedAt - b.connectedAt);
   response.json({ players, serverTime:now });
+});
+app.get('/api/admin/powers', requireAccount, requireAdmin, (request, response) => {
+  const socket = io.sockets.sockets.get(String(request.query.socketId || ''));
+  if (!socket || accountForSocket(socket)?.id !== request.account.id || !isAdminSocket(socket)) {
+    return response.status(409).json({ error:'관리자 연결을 찾을 수 없어요.' });
+  }
+  response.json({ powers:adminPowersFor(socket) });
+});
+app.post('/api/admin/powers', requireAccount, requireAdmin, (request, response) => {
+  const socket = io.sockets.sockets.get(String(request.body?.socketId || ''));
+  if (!socket || accountForSocket(socket)?.id !== request.account.id || !isAdminSocket(socket)) {
+    return response.status(409).json({ error:'관리자 연결을 찾을 수 없어요.' });
+  }
+  const powers = {
+    speed:request.body?.powers?.speed === true,
+    invincible:request.body?.powers?.invincible === true,
+    aim:request.body?.powers?.aim === true
+  };
+  socket.data.adminPowers = powers;
+  const room = rooms.get(socket.data.roomCode);
+  const player = room?.players.get(socket.id);
+  if (player) player.adminInvincible = powers.invincible;
+  if (room) sendState(room);
+  response.json({ powers });
+});
+app.post('/api/admin/kick', requireAccount, requireAdmin, (request, response) => {
+  const socketId = String(request.body?.socketId || '');
+  const target = io.sockets.sockets.get(socketId);
+  if (!target) return response.status(404).json({ error:'플레이어 연결을 찾을 수 없어요.' });
+  if (accountForSocket(target)?.id === request.account.id) {
+    return response.status(400).json({ error:'관리자 본인의 연결은 추방할 수 없어요.' });
+  }
+  if (isAdminSocket(target)) return response.status(403).json({ error:'관리자는 추방할 수 없어요.' });
+  target.emit('admin-kicked');
+  cancelMatchmaking(target, false);
+  removePlayerFromRoom(target);
+  target.disconnect(true);
+  response.json({ kicked:true });
 });
 app.post('/api/admin/coins', requireAccount, requireAdmin, (request, response) => {
   const username = String(request.body?.username || '').trim();
@@ -562,11 +602,21 @@ function safeSpawn(room = null) {
 function accountForSocket(socket) {
   return accounts.find(account => account.id === socket.data.accountId) || null;
 }
+function isAdminSocket(socket) {
+  const account = accountForSocket(socket);
+  return Boolean(account?.isAdmin && account.usernameKey === adminUsernameKey() && adminCredentialTag());
+}
+function adminPowersFor(socket) {
+  if (!isAdminSocket(socket)) return { speed:false, invincible:false, aim:false };
+  const powers = socket.data.adminPowers || {};
+  return { speed:powers.speed === true, invincible:powers.invincible === true, aim:powers.aim === true };
+}
 function makePlayer(id, name, spawn, room, socket) {
   const account = socket ? accountForSocket(socket) : null;
   return {
     id, name, x:spawn.x, y:spawn.y, angle:0, alive:true,
     equippedItem:account?.owned.includes(account.equipped) ? account.equipped : null,
+    adminInvincible:socket ? adminPowersFor(socket).invincible : false,
     shieldUntil:0, frozenUntil:0, slowedUntil:0, hiddenUntil:0, phaseUntil:0,
     speedBoostUntil:0, tagImmuneUntil:0, specialCooldownUntil:0, anchor:null, snapVersion:0,
     obstacleInside:room.obstacles.map(() => false), obstacleEntered:room.obstacles.map(() => false),
@@ -717,10 +767,15 @@ function shieldBlocks(room, player, now) {
   return true;
 }
 function eliminateOnlinePlayer(room, player, reason) {
-  if (!player.alive) return;
+  if (!player.alive) return false;
+  if (player.adminInvincible) {
+    io.to(room.code).emit('toast', `${player.name}님의 관리자 보호가 공격을 막았어요!`);
+    return false;
+  }
   player.alive = false;
   io.to(room.code).emit('toast', `${player.name}님이 ${reason} 탈락했어요!`);
   finishIfOneLeft(room);
+  return true;
 }
 function createGravityField(room, x, y, now, ownerId = null) {
   room.fields.push({ id:crypto.randomUUID(), ownerId, x, y, radius:145, expiresAt:now + 3600 });
@@ -739,7 +794,22 @@ function updateRoomEffects(room, now) {
   for (let index = room.projectiles.length - 1; index >= 0; index--) {
     const projectile = room.projectiles[index];
     projectile.age += stepSeconds;
-    if (projectile.kind === 'boomerang' && projectile.age >= .78) projectile.returning = true;
+    if (projectile.targetId) {
+      let target = room.players.get(projectile.targetId);
+      if (!target?.alive || target.id === projectile.ownerId) {
+        target = [...room.players.values()].filter(player => player.alive && player.id !== projectile.ownerId)
+          .sort((a, b) => Math.hypot(a.x - projectile.x, a.y - projectile.y) - Math.hypot(b.x - projectile.x, b.y - projectile.y))[0] || null;
+        projectile.targetId = target?.id || null;
+      }
+      if (target) {
+        const dx = target.x - projectile.x, dy = target.y - projectile.y;
+        const distance = Math.hypot(dx, dy) || 1;
+        const speed = Math.max(1000, Math.hypot(projectile.vx, projectile.vy));
+        projectile.vx = dx / distance * speed;
+        projectile.vy = dy / distance * speed;
+      }
+    }
+    if (projectile.kind === 'boomerang' && projectile.age >= .78 && !projectile.targetId) projectile.returning = true;
     if (projectile.returning) {
       const owner = room.players.get(projectile.ownerId);
       if (!owner?.alive) { room.projectiles.splice(index, 1); continue; }
@@ -757,11 +827,20 @@ function updateRoomEffects(room, now) {
     if (!remove) {
       for (const target of room.players.values()) {
         if (!target.alive || target.id === projectile.ownerId) continue;
-        const distance = Math.hypot(target.x - projectile.x, target.y - projectile.y);
+        let distance = Math.hypot(target.x - projectile.x, target.y - projectile.y);
+        if (projectile.targetId === target.id) {
+          const dx = projectile.x - oldX, dy = projectile.y - oldY;
+          const lengthSquared = dx * dx + dy * dy;
+          const projection = lengthSquared ? clamp(((target.x - oldX) * dx + (target.y - oldY) * dy) / lengthSquared, 0, 1) : 0;
+          distance = Math.hypot(target.x - (oldX + dx * projection), target.y - (oldY + dy * projection));
+        }
         if (distance > 20) continue;
         remove = true;
-        if (projectile.kind === 'gravity') createGravityField(room, projectile.x, projectile.y, now, projectile.ownerId);
-        if (!shieldBlocks(room, target, now)) {
+        if (target.adminInvincible) {
+          io.to(room.code).emit('toast', `${target.name}님의 관리자 보호가 공격을 막았어요!`);
+        } else if (projectile.kind === 'gravity') {
+          createGravityField(room, projectile.x, projectile.y, now, projectile.ownerId);
+        } else if (!shieldBlocks(room, target, now)) {
           if (projectile.kind === 'ice') {
             target.frozenUntil = Math.max(target.frozenUntil, now + 1300);
             target.slowedUntil = Math.max(target.slowedUntil, now + 3900);
@@ -830,11 +909,19 @@ function useOnlineSpecial(socket, payload, acknowledge) {
     announce(`${player.name}님이 수호 방패를 펼쳤어요.`);
   } else if (['punch', 'boomerang', 'ice', 'gravity'].includes(item)) {
     const speed = item === 'punch' ? 540 : item === 'boomerang' ? 470 : item === 'ice' ? 430 : 360;
+    const target = adminPowersFor(socket).aim
+      ? [...room.players.values()].filter(other => other.alive && other.id !== player.id)
+        .sort((a, b) => Math.hypot(a.x - player.x, a.y - player.y) - Math.hypot(b.x - player.x, b.y - player.y))[0]
+      : null;
+    const shotAngle = target ? Math.atan2(target.y - player.y, target.x - player.x) : angle;
+    const shotX = Math.cos(shotAngle), shotY = Math.sin(shotAngle);
+    if (target) player.angle = shotAngle;
     room.projectiles.push({
       id:crypto.randomUUID(), kind:item, ownerId:player.id,
-      x:player.x + directionX * 16, y:player.y + directionY * 16,
-      vx:directionX * speed, vy:directionY * speed,
-      life:item === 'boomerang' ? 2.4 : item === 'ice' ? 1.65 : item === 'gravity' ? 1.5 : 1.35,
+      x:player.x + shotX * 16, y:player.y + shotY * 16,
+      vx:shotX * (target ? 1000 : speed), vy:shotY * (target ? 1000 : speed),
+      targetId:target?.id || null,
+      life:target ? 4 : item === 'boomerang' ? 2.4 : item === 'ice' ? 1.65 : item === 'gravity' ? 1.5 : 1.35,
       age:0, returning:false
     });
     announce(`${player.name}님이 ${item === 'ice' ? '빙결탄' : item === 'gravity' ? '중력 구슬' : item === 'boomerang' ? '부메랑' : '날아가는 주먹'}을 사용했어요!`);
@@ -913,13 +1000,15 @@ function useOnlineSpecial(socket, payload, acknowledge) {
 
 io.on('connection', socket => {
   socket.data.connectedAt = Date.now();
+  socket.data.adminPowers = { speed:false, invincible:false, aim:false };
   const token = socket.handshake.auth?.token || readCookie(socket.request, SESSION_COOKIE);
   socket.data.accountId = verifySession(token)?.id || null;
   socket.on('account-logout', () => {
     socket.data.accountId = null;
+    socket.data.adminPowers = { speed:false, invincible:false, aim:false };
     const room = rooms.get(socket.data.roomCode);
     const player = room?.players.get(socket.id);
-    if (player) { player.equippedItem = null; player.shieldUntil = 0; }
+    if (player) { player.equippedItem = null; player.shieldUntil = 0; player.adminInvincible = false; }
     if (room) sendState(room);
   });
   socket.on('join', payload => {
@@ -984,7 +1073,7 @@ io.on('connection', socket => {
     const oldX = player.x, oldY = player.y;
     const elapsed = clamp((now - (player.lastMoveAt || now)) / 1000, .025, .2);
     const baseSpeed = socket.id === room.taggerId ? 210 : 273;
-    const speedFactor = (player.slowedUntil > now ? .42 : 1) * (player.speedBoostUntil > now ? 1.65 : 1);
+    const speedFactor = (player.slowedUntil > now ? .42 : 1) * (player.speedBoostUntil > now ? 1.65 : 1) * (adminPowersFor(socket).speed ? 2.5 : 1);
     const maxDistance = baseSpeed * speedFactor * elapsed + 18;
     const wantedDistance = Math.hypot(x - oldX, y - oldY);
     const limit = wantedDistance > maxDistance ? maxDistance / wantedDistance : 1;
@@ -1079,7 +1168,7 @@ setInterval(() => {
     const tagger = room.players.get(room.taggerId);
     if (room.started && !room.gameOver && tagger?.alive && now >= room.tagCooldownUntil) {
       for (const player of room.players.values()) {
-        if (player.alive && player.id !== tagger.id && player.hiddenUntil <= now && player.tagImmuneUntil <= now && Math.hypot(player.x - tagger.x, player.y - tagger.y) < 31) {
+        if (player.alive && player.id !== tagger.id && !player.adminInvincible && player.hiddenUntil <= now && player.tagImmuneUntil <= now && Math.hypot(player.x - tagger.x, player.y - tagger.y) < 31) {
           if (shieldBlocks(room, player, now)) {
             room.tagCooldownUntil = now + 500;
             break;
