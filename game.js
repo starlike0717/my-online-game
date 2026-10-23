@@ -1864,9 +1864,6 @@
     const button = event.target.closest('.admin-kick-button');
     if (button) kickAdminPlayer(button);
   });
-  $('adminOverlay').addEventListener('click', event => {
-    if (event.target === $('adminOverlay')) closeAdminPanel();
-  });
   $('languageToggle').addEventListener('click', () => setLanguage(language === 'ko' ? 'en' : 'ko'));
   $('deviceSettingsButton').addEventListener('click', () => {
     if (practiceMode && !practicePaused && !gameOver) $('practicePauseButton').click();
@@ -1902,18 +1899,43 @@
   $('passwordChangeForm').addEventListener('submit', submitPasswordChange);
   $('accountForm').addEventListener('submit', submitAccountForm);
   $('accountLogoutButton').addEventListener('click', logoutAccount);
-  $('accountCloseButton').addEventListener('click', () => {
+  function closeAccountPanel() {
+    if ($('accountOverlay').contains(document.activeElement)) document.activeElement.blur();
     setAccountPasswordVisibility(false);
     closePasswordChangeForm();
     $('accountOverlay').hidden = true;
-  });
-  $('accountOverlay').addEventListener('click', event => {
-    if (event.target === $('accountOverlay')) {
-      setAccountPasswordVisibility(false);
-      closePasswordChangeForm();
-      $('accountOverlay').hidden = true;
-    }
-  });
+  }
+  $('accountCloseButton').addEventListener('click', closeAccountPanel);
+
+  const dismissiblePanels = [
+    { overlay:$('adminOverlay'), panel:document.querySelector('.admin-panel'), close:closeAdminPanel },
+    { overlay:$('accountOverlay'), panel:document.querySelector('.account-panel'), close:closeAccountPanel },
+    { overlay:$('shopOverlay'), panel:document.querySelector('.shop-panel'), close:closeShop }
+  ];
+  let modalPointerStart = null;
+  const topModal = () => dismissiblePanels.find(entry => !entry.overlay.hidden);
+  document.addEventListener('pointerdown', event => {
+    const modal = topModal();
+    modalPointerStart = modal ? {
+      modal, pointerId:event.pointerId, x:event.clientX, y:event.clientY,
+      outside:!modal.panel.contains(event.target), moved:false
+    } : null;
+  }, { capture:true, passive:true });
+  document.addEventListener('pointermove', event => {
+    if (modalPointerStart && modalPointerStart.pointerId === event.pointerId && Math.hypot(event.clientX - modalPointerStart.x, event.clientY - modalPointerStart.y) > 10) modalPointerStart.moved = true;
+  }, { capture:true, passive:true });
+  document.addEventListener('pointercancel', () => { modalPointerStart = null; }, { capture:true, passive:true });
+  document.addEventListener('click', event => {
+    const start = modalPointerStart;
+    modalPointerStart = null;
+    const modal = topModal();
+    if (!modal || modal.panel.contains(event.target)) return;
+    // A drag or scroll that began inside the panel is not an outside tap.
+    if (event.detail > 0 && start && (start.modal !== modal || !start.outside || start.moved)) return;
+    event.preventDefault();
+    event.stopPropagation();
+    modal.close();
+  }, true);
   $('onlineModeButton').addEventListener('click', () => selectMode('online'));
   $('matchModeButton').addEventListener('click', () => selectMode('match'));
   $('practiceModeButton').addEventListener('click', () => selectMode('practice'));
