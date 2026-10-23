@@ -1,6 +1,74 @@
 (() => {
   'use strict';
 
+  // Original synthesized music and effects need no downloaded audio files.
+  class GameAudio {
+    constructor() {
+      try { this.enabled = localStorage.getItem('tag-sound-enabled-v1') !== 'off'; } catch { this.enabled = true; }
+      this.context = null;
+      this.master = null;
+      this.timer = null;
+      this.step = 0;
+      this.paused = false;
+      this.resultKey = null;
+    }
+    unlock() {
+      if (!this.enabled || document.hidden) return;
+      try {
+        if (!this.context) {
+          const Audio = window.AudioContext || window.webkitAudioContext;
+          if (!Audio) return;
+          this.context = new Audio();
+          this.master = this.context.createGain();
+          this.master.gain.value = .2;
+          this.master.connect(this.context.destination);
+          this.timer = setInterval(() => this.music(), 300);
+        }
+        if (this.context.state === 'suspended') this.context.resume().catch(() => {});
+      } catch { /* An unavailable audio device must never block the game UI. */ }
+    }
+    tone(note, duration = .16, volume = .2, delay = 0, type = 'sine') {
+      if (!this.enabled || !this.context || this.context.state !== 'running' || document.hidden) return;
+      try {
+        const now = this.context.currentTime + delay;
+        const oscillator = this.context.createOscillator(), gain = this.context.createGain();
+        oscillator.type = type;
+        oscillator.frequency.value = 440 * 2 ** ((note - 69) / 12);
+        gain.gain.setValueAtTime(0, now);
+        gain.gain.linearRampToValueAtTime(volume, now + .012);
+        gain.gain.exponentialRampToValueAtTime(.0001, now + duration);
+        oscillator.connect(gain); gain.connect(this.master);
+        oscillator.start(now); oscillator.stop(now + duration + .02);
+        oscillator.onended = () => { oscillator.disconnect(); gain.disconnect(); };
+      } catch {}
+    }
+    music() {
+      if (this.paused || !this.enabled || document.hidden) return;
+      const melody = [72,76,79,76,74,77,81,77,72,76,79,84,81,79,76,74];
+      this.tone(melody[this.step % melody.length], .24, .1, 0, 'triangle');
+      if (this.step % 4 === 0) this.tone([48,53,48,55][Math.floor(this.step / 4) % 4], .8, .13);
+      this.step++;
+    }
+    effect(kind) {
+      const notes = {
+        click:[79], skill:[67,74,86], tag:[76,64], hit:[55,48],
+        ready:[76,84], win:[72,76,79,84,88], lose:[67,63,60,55]
+      }[kind] || [];
+      notes.forEach((note, i) => this.tone(note, kind === 'click' ? .065 : .18, kind === 'click' ? .12 : .3, i * .09, kind === 'hit' ? 'triangle' : 'sine'));
+    }
+    toggle() {
+      this.enabled = !this.enabled;
+      try { localStorage.setItem('tag-sound-enabled-v1', this.enabled ? 'on' : 'off'); } catch {}
+      if (this.master && this.context) this.master.gain.setValueAtTime(this.enabled ? .2 : 0, this.context.currentTime);
+      if (this.enabled) this.unlock();
+    }
+    result(key, won) {
+      if (key && this.resultKey !== key) this.effect(won ? 'win' : 'lose');
+      this.resultKey = key;
+    }
+  }
+  const gameAudio = new GameAudio();
+
   // Keep networking helpers in this file so deployment cannot omit a dependency.
   class MovementHistory {
     constructor() { this.reset(); }
@@ -66,6 +134,10 @@
   const LANGUAGE_KEY = 'tag-stickmen-language-v1';
   let language = (() => { try { return localStorage.getItem(LANGUAGE_KEY) === 'en' ? 'en' : 'ko'; } catch { return 'ko'; } })();
   const ENGLISH_TEXT = {
+    '무기 상점':'Weapon shop', '게임이나 매칭 대기 중에는 무기를 바꿀 수 없어요. 로비에서 장착해 주세요.':'Equip weapons in the lobby. You cannot change them during a game or matchmaking.',
+    '상점 처리가 끝난 뒤 입장해 주세요.':'Wait for the shop action to finish before joining.',
+    '술레잡기':'Tag', '게임':'Game', '장착 중인 무기':'Equipped weapon', '무기 충전':'Weapon charge', '소리 끄기':'Mute sound', '소리 켜기':'Enable sound',
+    '게임이 끝난 방에 입장했어요. 다시 하기를 눌러 새 게임을 시작하세요.':'Joined a finished room. Press Play again to start a new game.',
     '메뉴 스크롤':'Scroll menu', '↑ 위로':'↑ Up', '↓ 아래로':'↓ Down',
     '입장 버튼으로 ↓':'Go to entry button ↓', '시작 버튼으로 ↓':'Go to start button ↓',
     '특정 계정 관리':'Manage a specific account', '대상 아이디':'Target username', '계정 조회':'Look up account',
@@ -155,7 +227,6 @@
     '아이디는 한글·영문·숫자·_·- 조합으로 2~20자여야 해요.':'Username must be 2–20 Korean or English letters, numbers, _ or -.',
     '비밀번호는 8~100자로 입력해 주세요.':'Password must be 8–100 characters.', '이미 사용 중인 아이디예요.':'That username is already taken.',
     '비밀번호는 사용자 이름과 다르게 정해 주세요.':'Password must be different from your username.',
-    '이미 사용 중인 비밀번호예요. 다른 비밀번호를 정해 주세요.':'That password is already in use. Choose another password.',
     '아이디 또는 비밀번호가 맞지 않아요.':'Incorrect username or password.', '알 수 없는 장비예요.':'Unknown item.',
     '이미 보유한 장비예요.':'You already own this item.', '보유한 장비만 장착할 수 있어요.':'You can equip only items you own.',
     '보상 요청을 확인할 수 없어요.':'Could not verify the reward request.', '알 수 없는 무기예요.':'Unknown weapon.',
@@ -386,7 +457,8 @@
     language = nextLanguage === 'en' ? 'en' : 'ko';
     try { localStorage.setItem(LANGUAGE_KEY, language); } catch {}
     document.documentElement.lang = language;
-    document.title = language === 'en' ? 'Tag Stickmen' : '빙글빙글 술래잡기';
+    document.title = language === 'en' ? 'Tag Game' : '술레잡기 게임';
+    updateSoundButton();
     $('languageToggle').textContent = language === 'ko' ? 'EN' : '한글';
     $('languageToggle').title = language === 'ko' ? 'Switch language to English' : '한국어로 언어 변경';
     $('languageToggle').setAttribute('aria-label', language === 'ko' ? 'Switch language to English' : '한국어로 언어 변경');
@@ -1031,6 +1103,8 @@
   let trainingMode = false;
   let practiceKind = 'challenge';
   let practiceProfile = loadPracticeProfile();
+  let roundEquippedItem = null;
+  let shopBusy = false;
   let accountProfile = null;
   let accountMode = 'login';
   let accountBusy = false;
@@ -1049,6 +1123,7 @@
   let onlineDecoys = [];
   let practiceAnchor = null;
   let specialCooldownUntil = 0;
+  let lastWeaponCooling = false;
   let shieldActiveUntil = 0;
   let shieldGraceUntil = 0;
   let trainingAttackAt = 0;
@@ -1077,6 +1152,8 @@
     $('connectionText').textContent = translateText(message);
   }
   function toast(message) {
+    if (/술래예요|술래 교대/.test(message)) gameAudio.effect('tag');
+    else if (/명중|맞아 탈락|잡혀 탈락/.test(message)) gameAudio.effect('hit');
     const element = $('toast');
     element.textContent = translateText(message);
     element.classList.add('show');
@@ -1209,6 +1286,12 @@
       }
     }
   }
+  function loadoutLocked() {
+    return matchmaking || (!!myId && !gameOver);
+  }
+  function equippedItem() {
+    return loadoutLocked() ? roundEquippedItem : practiceProfile.equipped;
+  }
   function renderShop() {
     if (!$('shopCoinLabel')) return;
     ensureSpecialControls();
@@ -1227,7 +1310,7 @@
         ? equipped ? 'Equipped' : owned ? 'Equip this item' : `${data.price} coins · Buy`
         : equipped ? '장착 중' : owned ? '이 장비로 변경' : `${data.price} 코인 · 구매`;
       button.setAttribute('aria-pressed', String(equipped));
-      button.disabled = false;
+      button.disabled = loadoutLocked() || shopBusy;
     }
   }
   function updatePracticeActions(time = performance.now()) {
@@ -1235,17 +1318,28 @@
     const onlineActive = !practiceMode && !!myId && gameStarted && !gameOver;
     const actionsVisible = practiceMode && (!gameOver || trainingMode) || onlineActive;
     $('practiceActions').hidden = !actionsVisible;
-    $('practiceShopButton').hidden = !practiceMode;
-    const item = practiceProfile.equipped;
+    $('practiceShopButton').hidden = !practiceMode || loadoutLocked();
+    const item = equippedItem();
     $('practiceGearLabel').textContent = onlineActive && !accountProfile ? (language === 'en' ? 'Sign in to use online weapons' : '온라인 무기는 로그인 필요') : item ? itemLabel(SPECIAL_ITEMS[item]) : (language === 'en' ? 'No item equipped' : '장비 없음');
     const weaponIcon = $('equippedWeaponIcon');
     const visibleItem = onlineActive && !accountProfile ? null : item;
     weaponIcon.textContent = visibleItem ? SPECIAL_ITEMS[visibleItem].icon : onlineActive ? '🔒' : '—';
     weaponIcon.title = visibleItem ? `${language === 'en' ? 'Equipped' : '장착 중'}: ${itemLabel(SPECIAL_ITEMS[visibleItem])}` : onlineActive ? (language === 'en' ? 'Sign in to use weapons online' : '온라인 무기는 로그인해야 사용할 수 있어요') : (language === 'en' ? 'No weapon equipped' : '장착한 무기 없음');
     weaponIcon.setAttribute('aria-label', weaponIcon.title);
-    const remaining = Math.max(0, Math.ceil((specialCooldownUntil - time) / 1000));
+    const remainingMs = Math.max(0, specialCooldownUntil - time);
+    const remaining = Math.ceil(remainingMs / 1000);
+    if (actionsVisible && visibleItem && lastWeaponCooling && !remaining) gameAudio.effect('ready');
+    lastWeaponCooling = !!visibleItem && remaining > 0;
+    const secondsLabel = (remainingMs / 1000).toFixed(1);
+    const charge = visibleItem ? Math.max(0, Math.min(100, (1 - remainingMs / SPECIAL_ITEMS[visibleItem].cooldown) * 100)) : 0;
+    const track = $('weaponCooldownTrack');
+    track.hidden = !visibleItem;
+    track.setAttribute('aria-valuenow', String(Math.round(charge)));
+    $('weaponCooldownFill').style.width = `${charge}%`;
+    $('practiceGearLabel').closest('.weapon-status-card').classList.toggle('ready', !!visibleItem && !remaining);
+
     $('specialCooldownLabel').textContent = actionsVisible && item
-      ? !practiceMode && !accountProfile ? (language === 'en' ? 'Sign in required' : '로그인 필요') : remaining ? (language === 'en' ? `Ready in ${remaining}s` : `재사용까지 ${remaining}초`) : (language === 'en' ? 'Ready' : '사용 가능')
+      ? !practiceMode && !accountProfile ? (language === 'en' ? 'Sign in required' : '로그인 필요') : remaining ? (language === 'en' ? `Ready in ${secondsLabel}s` : `재사용까지 ${secondsLabel}초`) : (language === 'en' ? 'Ready' : '사용 가능')
       : '';
     const mobileSkillButton = $('mobileSkillButton');
     const mobileSkillIcon = $('mobileSkillIcon');
@@ -1253,12 +1347,12 @@
     const mobileSkillCooldown = $('mobileSkillCooldown');
     mobileSkillButton.hidden = deviceMode !== 'mobile' || !actionsVisible;
     mobileSkillIcon.textContent = visibleItem ? SPECIAL_ITEMS[visibleItem].icon : '✦';
-    mobileSkillLabel.textContent = language === 'en' ? 'SKILL' : '스킬';
+    mobileSkillLabel.textContent = visibleItem ? itemLabel(SPECIAL_ITEMS[visibleItem]) : language === 'en' ? 'SKILL' : '스킬';
     mobileSkillCooldown.textContent = !item
       ? (language === 'en' ? 'Equip' : '장착 필요')
       : !practiceMode && !accountProfile
         ? (language === 'en' ? 'Sign in' : '로그인 필요')
-        : remaining ? `${remaining}s` : (language === 'en' ? 'Ready' : '사용 가능');
+        : remaining ? `${secondsLabel}s` : (language === 'en' ? 'Ready' : '사용 가능');
     mobileSkillButton.setAttribute('aria-label', visibleItem
       ? `${language === 'en' ? 'Use skill' : '스킬 사용'}: ${itemLabel(SPECIAL_ITEMS[visibleItem])}`
       : (language === 'en' ? 'Skill button' : '스킬 버튼'));
@@ -1274,8 +1368,11 @@
   }
   async function shopAction(item) {
     const data = SPECIAL_ITEMS[item];
-    if (!data) return;
+    if (!data || shopBusy) return;
+    if (loadoutLocked()) { toast('게임이나 매칭 대기 중에는 무기를 바꿀 수 없어요. 로비에서 장착해 주세요.'); return; }
     if (accountProfile) {
+      shopBusy = true;
+      renderShop();
       try {
         const alreadyOwned = practiceProfile.owned.includes(item);
         const endpoint = alreadyOwned ? '/api/account/equip' : '/api/account/purchase';
@@ -1285,6 +1382,7 @@
           ? alreadyOwned ? `Equipped ${itemLabel(data)}.` : `${itemLabel(data)} purchased! You can equip one item at a time.`
           : alreadyOwned ? `${itemLabel(data)}으로 장비를 바꿨어요.` : `${itemLabel(data)} 구매 완료! 한 번에 하나만 장착돼요.`);
       } catch (error) { toast(error.message); }
+      finally { shopBusy = false; renderShop(); }
       return;
     }
     if (practiceProfile.owned.includes(item)) {
@@ -1303,7 +1401,7 @@
     savePracticeProfile();
   }
   function openShop() {
-    if (practicePaused) return;
+    if (loadoutLocked()) { toast('게임이나 매칭 대기 중에는 무기를 바꿀 수 없어요. 로비에서 장착해 주세요.'); return; }
     renderShop();
     shopOpenedAt = performance.now();
     $('shopOverlay').hidden = false;
@@ -1340,6 +1438,7 @@
     });
   }
   function showGame() {
+    gameAudio.result(null, false);
     $('joinOverlay').hidden = true;
     $('matchOverlay').hidden = true;
     $('resultPanel').hidden = true;
@@ -1354,6 +1453,8 @@
     canvas.focus({ preventScroll: true });
   }
   function showMatchmaking() {
+    roundEquippedItem = practiceProfile.equipped;
+    $('shopOverlay').hidden = true;
     matchmaking = true;
     myMatchReady = false;
     $('joinOverlay').hidden = true;
@@ -1433,8 +1534,9 @@
     savePracticeProfile();
   }
   function updateResultPanel() {
+    gameAudio.result(gameOver ? `${practiceMode ? 'practice' : 'online'}:${winnerId || 'none'}` : null, winnerId === myId);
     $('resultPanel').hidden = !gameOver || trainingMode;
-    $('resultShopButton').hidden = !(gameOver && practiceMode);
+    $('resultShopButton').hidden = !gameOver || trainingMode;
     if (gameOver && practiceMode) {
       const didWin = winnerId === myId;
       $('resultTitle').textContent = didWin ? `${practiceRoundStage}단계 승리!` : '다시 도전해요';
@@ -1473,8 +1575,8 @@
         ? '움직이지 않는 훈련봇 한 명에게 특수 무기를 시험해요.'
         : '연습에서 이길 때마다 코인을 받고, 단계가 오를수록 봇이 강해져요.';
       $('modeTip').textContent = practiceKind === 'training'
-        ? '상점에서 장비 하나를 골라 장착하고, Q 또는 우클릭으로 훈련봇에게 시험해 보세요.'
-        : '승리 코인으로 장비를 모으고, 상점에서 한 번에 하나씩 바꿔 장착하세요.';
+        ? '입장 전에 상점에서 장비 하나를 골라 장착하세요. 입장 후에는 무기를 바꿀 수 없어요.'
+        : '입장 전에 상점에서 무기를 장착하세요. 단계 도전 중에는 무기를 바꿀 수 없어요.';
     } else if (isMatch && isFile) {
       $('joinDescription').textContent = '매칭은 게임 서버 주소로 접속해야 이용할 수 있어요.';
       $('modeTip').textContent = '서버 실행 후 http:// 주소로 게임을 열어 주세요.';
@@ -1494,6 +1596,8 @@
   }
 
   function startPractice(name) {
+    roundEquippedItem = practiceProfile.equipped;
+    $('shopOverlay').hidden = true;
     practiceMode = true;
     practicePaused = false;
     practicePauseStartedAt = 0;
@@ -1604,12 +1708,23 @@
         networkClock.renderTime = 0;
         lastStateTime = 0;
         myId = data.id;
+        roundEquippedItem = practiceProfile.equipped;
+        $('shopOverlay').hidden = true;
+        practiceMode = false;
+        trainingMode = false;
+        gameStarted = !!data.started;
+        gameOver = !!data.gameOver;
+        winnerId = data.winnerId || null;
+        players.clear();
+        clearMovementInputs();
         onlineProjectiles = []; onlineTraps = []; onlineFields = []; onlineDecoys = [];
         specialCooldownUntil = 0;
         $('roomLabel').textContent = data.code;
         $('copyBtn').disabled = false;
         showGame();
-        status(data.matched ? '매칭 완료! WASD 또는 방향키로 움직이세요.' : '방에 참가했어요 — WASD 또는 방향키로 움직이세요.');
+        $('restartButton').disabled = false;
+        updateResultPanel();
+        status(data.gameOver ? '게임이 끝난 방에 입장했어요. 다시 하기를 눌러 새 게임을 시작하세요.' : data.matched ? '매칭 완료! WASD 또는 방향키로 움직이세요.' : '방에 참가했어요 — WASD 또는 방향키로 움직이세요.');
       });
       socket.on('matchmaking-state', state => {
         if (!matchmaking) showMatchmaking();
@@ -1667,6 +1782,7 @@
           if (player.id !== myId) view.angle = Number.isFinite(player.angle) ? player.angle : view.angle;
           view.equippedItem = player.equippedItem || null;
           if (player.id === myId) {
+            roundEquippedItem = player.equippedItem || null;
             specialCooldownUntil = perfNow + Math.max(0, Number(player.specialCooldownMs || 0));
           }
           for (const [source, target] of [['shieldUntil','shieldUntil'], ['frozenUntil','frozenUntil'], ['slowedUntil','slowedUntil'], ['hiddenUntil','hiddenUntil'], ['phaseUntil','phaseUntil'], ['speedBoostUntil','speedBoostUntil']]) {
@@ -1810,11 +1926,11 @@
     if (button) activateSpecialItem(button.dataset.actionItem);
   });
   $('mobileSkillButton').addEventListener('click', () => {
-    if (!practiceProfile.equipped) {
+    if (!equippedItem()) {
       toast(!practiceMode && !accountProfile ? '온라인 무기를 쓰려면 먼저 계정에 로그인해 주세요.' : '상점에서 장비를 장착해 주세요.');
       return;
     }
-    activateSpecialItem(practiceProfile.equipped);
+    activateSpecialItem(equippedItem());
   });
   $('practicePauseButton').addEventListener('click', () => {
     if (!practiceMode || gameOver) return;
@@ -1836,6 +1952,7 @@
   });
   $('joinForm').addEventListener('submit', event => {
     event.preventDefault();
+    if (shopBusy) { toast('상점 처리가 끝난 뒤 입장해 주세요.'); return; }
     if (!selectedMode) { status('온라인 또는 연습 모드를 먼저 선택해 주세요.'); return; }
     const name = accountProfile?.username || $('nameInput').value.trim().slice(0, 20) || '플레이어';
     const code = $('roomInput').value.trim().toUpperCase().slice(0, 12);
@@ -1918,7 +2035,7 @@
     if ((practiceMode || myId) && down && !event.repeat) {
       if (event.code === 'KeyQ') {
         event.preventDefault();
-        if (practiceProfile.equipped) activateSpecialItem(practiceProfile.equipped);
+        if (equippedItem()) activateSpecialItem(equippedItem());
         return;
       }
     }
@@ -1972,13 +2089,13 @@
   canvas.addEventListener('contextmenu', event => {
     if (!practiceMode && !myId) return;
     event.preventDefault();
-    activateSpecialItem(practiceProfile.equipped);
+    activateSpecialItem(equippedItem());
   });
 
   function useOnlineSpecial(item) {
     if (!myId || !gameStarted || gameOver || !$('shopOverlay').hidden) { toast('게임이 시작된 뒤에 무기를 쓸 수 있어요.'); return; }
     if (!accountProfile) { toast('온라인 무기를 쓰려면 먼저 계정에 로그인해 주세요.'); return; }
-    if (!SPECIAL_ITEMS[item] || practiceProfile.equipped !== item || !practiceProfile.owned.includes(item)) {
+    if (!SPECIAL_ITEMS[item] || equippedItem() !== item || !practiceProfile.owned.includes(item)) {
       toast('상점에서 보유한 무기를 장착해 주세요.'); return;
     }
     const now = performance.now();
@@ -1994,6 +2111,7 @@
         updatePracticeActions();
         return;
       }
+      gameAudio.effect('skill');
       specialCooldownUntil = performance.now() + result.cooldownMs;
       updatePracticeActions();
     });
@@ -2001,7 +2119,7 @@
 
   function activateShield() {
     if (!practiceMode || gameOver || !$('shopOverlay').hidden) return;
-    if (practiceProfile.equipped !== 'shield') { toast('상점에서 방패를 구매하고 장착해 주세요.'); return; }
+    if (equippedItem() !== 'shield') { toast('상점에서 방패를 구매하고 장착해 주세요.'); return; }
     const now = performance.now();
     if (now < specialCooldownUntil) { toast('방패가 아직 충전 중이에요.'); return; }
     specialCooldownUntil = now + SPECIAL_ITEMS.shield.cooldown;
@@ -2020,7 +2138,7 @@
   }
   function launchPracticePunch() {
     if (!practiceMode || gameOver || !$('shopOverlay').hidden) return;
-    if (practiceProfile.equipped !== 'punch') { toast('상점에서 날아가는 주먹을 구매하고 장착해 주세요.'); return; }
+    if (equippedItem() !== 'punch') { toast('상점에서 날아가는 주먹을 구매하고 장착해 주세요.'); return; }
     const now = performance.now();
     if (now < specialCooldownUntil) { toast('주먹이 아직 충전 중이에요.'); return; }
     const player = players.get(myId);
@@ -2037,7 +2155,7 @@
   }
   function checkSpecialReady(item) {
     if (!practiceMode || gameOver || !$('shopOverlay').hidden) return null;
-    if (practiceProfile.equipped !== item) {
+    if (equippedItem() !== item) {
       toast(language === 'en' ? `Equip ${itemLabel(SPECIAL_ITEMS[item])} from the shop.` : `상점에서 ${SPECIAL_ITEMS[item].label}을 장착해 주세요.`);
       return null;
     }
@@ -2229,7 +2347,9 @@
       spring:activateSpringTrap, gravity:launchGravityOrb, phase:activatePhase,
       haste:activateHaste, anchor:activateAnchor, swap:activateSwap
     };
+    const previousCooldown = specialCooldownUntil;
     actions[item]?.();
+    if (specialCooldownUntil > previousCooldown) gameAudio.effect('skill');
   }
   function updatePracticeEffects(time) {
     practiceTraps = practiceTraps.filter(trap => trap.expiresAt > time);
@@ -2776,6 +2896,7 @@
   }
 
   function frame(timestamp) {
+    gameAudio.paused = (practiceMode && practicePaused) || gameOver;
     if (practicePaused && practiceMode) timestamp = practicePauseStartedAt;
     const dt = Math.min((timestamp - (lastFrameAt || timestamp)) / 1000, .05);
     lastFrameAt = timestamp;
@@ -2919,6 +3040,26 @@
     requestAnimationFrame(frame);
   }
 
+  function updateSoundButton() {
+    $('soundToggle').textContent = gameAudio.enabled ? '🔊' : '🔇';
+    $('soundToggle').setAttribute('aria-pressed', String(gameAudio.enabled));
+    $('soundToggle').setAttribute('aria-label', gameAudio.enabled ? (language === 'en' ? 'Mute sound' : '소리 끄기') : (language === 'en' ? 'Enable sound' : '소리 켜기'));
+    $('soundToggle').title = $('soundToggle').getAttribute('aria-label');
+  }
+  $('soundToggle').addEventListener('click', () => { gameAudio.toggle(); updateSoundButton(); });
+  document.addEventListener('pointerdown', event => {
+    if (!event.target.closest('#soundToggle')) gameAudio.unlock();
+  }, { capture:true, passive:true });
+  document.addEventListener('keydown', event => { if (!event.repeat) gameAudio.unlock(); }, { capture:true });
+  document.addEventListener('click', event => {
+    const button = event.target.closest('button');
+    if (button && !button.disabled && button.id !== 'soundToggle') gameAudio.effect('click');
+  });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) gameAudio.context?.suspend().catch(() => {});
+    else if (gameAudio.context) gameAudio.unlock();
+  });
+  window.addEventListener('pagehide', () => { gameAudio.context?.suspend().catch(() => {}); });
   const entryLayoutObserver = new MutationObserver(syncEntryLayout);
   for (const menu of [$('joinOverlay'), $('matchOverlay')]) {
     entryLayoutObserver.observe(menu, { attributes:true, attributeFilter:['hidden'] });
