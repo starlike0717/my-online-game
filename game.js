@@ -1,6 +1,62 @@
 (() => {
   'use strict';
 
+  // Keep networking helpers in this file so deployment cannot omit a dependency.
+  class MovementHistory {
+    constructor() { this.reset(); }
+    reset() { this.sequence = 0; this.acknowledged = 0; this.sent = []; }
+    clear() { this.sent = []; this.acknowledged = this.sequence; }
+    record(x, y) {
+      const move = { seq:++this.sequence, x, y };
+      this.sent.push(move);
+      if (this.sent.length > 160) this.sent.shift();
+      return move;
+    }
+    correction(player) {
+      const seq = player.lastMoveSeq;
+      if (!Number.isSafeInteger(seq) || seq <= this.acknowledged) return null;
+      const move = this.sent.find(item => item.seq === seq);
+      this.sent = this.sent.filter(item => item.seq > seq);
+      this.acknowledged = seq;
+      // Compare the server position with the position in that exact packet,
+      // never with the newer position currently being drawn on this client.
+      return move ? { x:player.x - move.x, y:player.y - move.y } : null;
+    }
+  }
+  class SnapshotBuffer {
+    constructor() { this.samples = []; }
+    push(time, x, y, reset = false) {
+      if (!Number.isFinite(time) || !Number.isFinite(x) || !Number.isFinite(y)) return;
+      if (reset) this.samples = [];
+      const last = this.samples[this.samples.length - 1];
+      if (last && time < last.time) return;
+      if (last?.time === time) this.samples.pop();
+      this.samples.push({ time, x, y });
+      if (this.samples.length > 24) this.samples.shift();
+    }
+    sample(time) {
+      const samples = this.samples;
+      if (!samples.length) return null;
+      if (time <= samples[0].time) return samples[0];
+      for (let i = 1; i < samples.length; i++) {
+        const before = samples[i - 1], after = samples[i];
+        if (time > after.time) continue;
+        const fraction = (time - before.time) / (after.time - before.time);
+        return { x:before.x + (after.x - before.x) * fraction, y:before.y + (after.y - before.y) * fraction };
+      }
+      const last = samples[samples.length - 1], previous = samples[samples.length - 2];
+      if (!previous) return last;
+      const elapsed = Math.max(1, last.time - previous.time);
+      const lead = Math.min(100, Math.max(0, time - last.time));
+      // Predict only briefly during a missing packet, then stop instead of drifting.
+      return {
+        x:Math.max(10, Math.min(790, last.x + (last.x - previous.x) / elapsed * lead)),
+        y:Math.max(10, Math.min(470, last.y + (last.y - previous.y) / elapsed * lead))
+      };
+    }
+  }
+
+
   const $ = id => document.getElementById(id);
   const GAME_SERVER_URL = String(window.GAME_SERVER_URL || location.origin).trim().replace(/\/+$/, '');
   const ACCOUNT_TOKEN_KEY = 'tag-stickmen-account-token-v1';
@@ -965,7 +1021,7 @@
   let lastFrameAt = 0;
   let lastMoveSentAt = 0;
   let lastHudUpdateAt = 0;
-  const movementHistory = new TagNetwork.MovementHistory();
+  const movementHistory = new MovementHistory();
   const networkClock = { serverTime:0, receivedAt:0, renderTime:0 };
   let lastStateTime = 0;
   let toastTimeout = 0;
@@ -1266,7 +1322,7 @@
       id: data.id, name: data.name, x: data.x, y: data.y,
       tx: data.x, ty: data.y, angle: data.angle || 0,
       vx: 0, vy: 0,
-      snapshots:new TagNetwork.SnapshotBuffer(), correctionX:0, correctionY:0,
+      snapshots:new SnapshotBuffer(), correctionX:0, correctionY:0,
       hiddenUntil:0, frozenUntil:0, slowedUntil:0, phaseUntil:0, speedBoostUntil:0, shieldUntil:0,
       snapVersion:data.snapVersion, equippedItem:data.equippedItem || null, anchor:null,
       obstacleInside: OBSTACLES.map(() => false), obstacleEntered: OBSTACLES.map(() => false),
