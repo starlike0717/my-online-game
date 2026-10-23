@@ -134,6 +134,8 @@
   const LANGUAGE_KEY = 'tag-stickmen-language-v1';
   let language = (() => { try { return localStorage.getItem(LANGUAGE_KEY) === 'en' ? 'en' : 'ko'; } catch { return 'ko'; } })();
   const ENGLISH_TEXT = {
+    '입장 전에 상점에서 장비 하나를 골라 장착하세요. 입장 후에는 무기를 바꿀 수 없어요.':'Equip one weapon in the shop before entering. Your weapon stays fixed during play.',
+    '입장 전에 상점에서 무기를 장착하세요. 단계 도전 중에는 무기를 바꿀 수 없어요.':'Equip a weapon in the shop before entering. You cannot change it during a stage challenge.',
     '무기 상점':'Weapon shop', '게임이나 매칭 대기 중에는 무기를 바꿀 수 없어요. 로비에서 장착해 주세요.':'Equip weapons in the lobby. You cannot change them during a game or matchmaking.',
     '상점 처리가 끝난 뒤 입장해 주세요.':'Wait for the shop action to finish before joining.',
     '술레잡기':'Tag', '게임':'Game', '장착 중인 무기':'Equipped weapon', '무기 충전':'Weapon charge', '소리 끄기':'Mute sound', '소리 켜기':'Enable sound',
@@ -1749,6 +1751,10 @@
         nextTurnAt = Date.now() + Math.max(0, state.nextTurnAt - stateTime);
         gameStarted = !!state.started;
         gameOver = !!state.gameOver;
+        if (!gameOver) {
+          $('shopOverlay').hidden = true;
+          shopOpenedAt = 0;
+        }
         winnerId = state.winnerId || null;
         if (Array.isArray(state.obstacles) && state.obstacles.length === OBSTACLE_SHAPES.length) {
           const changed = state.obstacles.some((obstacle, index) => {
@@ -2014,6 +2020,7 @@
     startPractice(name);
   }
   $('restartButton').addEventListener('click', () => {
+    if (shopBusy) { toast('상점 처리가 끝난 뒤 입장해 주세요.'); return; }
     if (practiceMode) { restartPracticeRound(); return; }
     if (!socket?.connected) { status('서버 연결이 끊겼어요. 다시 연결한 뒤 눌러 주세요.'); return; }
     $('restartButton').disabled = true;
