@@ -964,6 +964,10 @@
   let nextTurnAt = 0;
   let lastFrameAt = 0;
   let lastMoveSentAt = 0;
+  let lastHudUpdateAt = 0;
+  const movementHistory = new TagNetwork.MovementHistory();
+  const networkClock = { serverTime:0, receivedAt:0, renderTime:0 };
+  let lastStateTime = 0;
   let toastTimeout = 0;
   let practiceMode = false;
   let practicePaused = false;
@@ -1262,6 +1266,7 @@
       id: data.id, name: data.name, x: data.x, y: data.y,
       tx: data.x, ty: data.y, angle: data.angle || 0,
       vx: 0, vy: 0,
+      snapshots:new TagNetwork.SnapshotBuffer(), correctionX:0, correctionY:0,
       hiddenUntil:0, frozenUntil:0, slowedUntil:0, phaseUntil:0, speedBoostUntil:0, shieldUntil:0,
       snapVersion:data.snapVersion, equippedItem:data.equippedItem || null, anchor:null,
       obstacleInside: OBSTACLES.map(() => false), obstacleEntered: OBSTACLES.map(() => false),
@@ -1310,6 +1315,8 @@
   function returnToLobby() {
     clearMovementInputs();
     players.clear();
+    movementHistory.reset();
+    lastStateTime = 0;
     myId = null;
     practiceMode = false;
     practicePaused = false;
@@ -1494,7 +1501,8 @@
     script.onload = () => {
       if (typeof window.io !== 'function') { connection(false, '서버 클라이언트를 찾을 수 없음'); return; }
       socket = window.io(GAME_SERVER_URL, {
-        reconnection:true, timeout:5000, withCredentials:true,
+        reconnection:true, timeout:8000, withCredentials:true,
+        transports:['websocket','polling'], tryAllTransports:true,
         auth:{ token:readAccountToken() }
       });
       socket.on('connect', () => {
@@ -1536,6 +1544,9 @@
         if (data.profile?.id === accountProfile?.id) applyAccountProfile(data.profile);
       });
       socket.on('joined', data => {
+        movementHistory.reset();
+        networkClock.renderTime = 0;
+        lastStateTime = 0;
         myId = data.id;
         onlineProjectiles = []; onlineTraps = []; onlineFields = []; onlineDecoys = [];
         specialCooldownUntil = 0;
@@ -1558,7 +1569,13 @@
       socket.on('left', returnToLobby);
       socket.on('obstacle-explode', triggerObstacleExplosion);
       socket.on('state', state => {
-        nextTurnAt = state.nextTurnAt;
+        if (practiceMode || !myId) return;
+        const stateTime = Number.isFinite(state.serverTime) ? state.serverTime : Date.now();
+        if (stateTime < lastStateTime) return;
+        lastStateTime = stateTime;
+        networkClock.serverTime = stateTime;
+        networkClock.receivedAt = performance.now();
+        nextTurnAt = Date.now() + Math.max(0, state.nextTurnAt - stateTime);
         gameStarted = !!state.started;
         gameOver = !!state.gameOver;
         winnerId = state.winnerId || null;
@@ -1576,7 +1593,7 @@
         if (newlyGone.length) triggerObstacleExplosion(newlyGone);
         activeObstacleIndexes = serverActiveIndexes;
         obstaclesGone = !!state.obstaclesGone;
-        const wallNow = Date.now(), perfNow = performance.now();
+        const wallNow = stateTime, perfNow = performance.now();
         onlineProjectiles = Array.isArray(state.projectiles) ? state.projectiles.map(projectile => ({ ...projectile, receivedAt:perfNow })) : [];
         onlineTraps = Array.isArray(state.traps) ? state.traps.map(effect => ({ ...effect, expiresAt:perfNow + Math.max(0, effect.expiresAt - wallNow) })) : [];
         onlineFields = Array.isArray(state.fields) ? state.fields.map(effect => ({ ...effect, expiresAt:perfNow + Math.max(0, effect.expiresAt - wallNow) })) : [];
@@ -1591,7 +1608,7 @@
           view.name = player.name;
           view.alive = player.alive !== false;
           view.tagger = player.id === state.taggerId;
-          view.angle = Number.isFinite(player.angle) ? player.angle : view.angle;
+          if (player.id !== myId) view.angle = Number.isFinite(player.angle) ? player.angle : view.angle;
           view.equippedItem = player.equippedItem || null;
           if (player.id === myId) {
             specialCooldownUntil = perfNow + Math.max(0, Number(player.specialCooldownMs || 0));
@@ -1600,15 +1617,23 @@
             view[target] = perfNow + Math.max(0, Number(player[source] || 0) - wallNow);
           }
           view.anchor = player.anchor ? { ...player.anchor, returnAt:perfNow + Math.max(0, player.anchor.returnAt - wallNow) } : null;
-          if (player.id !== myId) { view.tx = player.x; view.ty = player.y; }
-          else {
-            view.tx = player.x; view.ty = player.y;
-            if (view.snapVersion !== player.snapVersion) {
-              view.x = player.x; view.y = player.y;
-              view.snapVersion = player.snapVersion;
-            } else if (!wasTagger && view.tagger) { view.x = player.x; view.y = player.y; }
-            else { view.x += (player.x - view.x) * .18; view.y += (player.y - view.y) * .18; }
+          const snapped = view.snapVersion !== player.snapVersion;
+          view.tx = player.x; view.ty = player.y;
+          if (player.id !== myId) {
+            view.snapshots.push(stateTime, player.x, player.y, snapped);
+            if (snapped) { view.x = player.x; view.y = player.y; }
+          } else if (snapped || (!wasTagger && view.tagger)) {
+            view.x = player.x; view.y = player.y;
+            view.correctionX = view.correctionY = 0;
+            movementHistory.clear();
+          } else {
+            const error = movementHistory.correction(player);
+            if (error) {
+              view.correctionX = Math.abs(error.x) > 1 ? error.x : 0;
+              view.correctionY = Math.abs(error.y) > 1 ? error.y : 0;
+            }
           }
+          view.snapVersion = player.snapVersion;
           if (player.id === myId && wasAlive && !view.alive) {
             clearMovementInputs();
             status('잡혔어요! 관전 중입니다.');
@@ -2648,7 +2673,7 @@
   }
 
   function drawStick(player, time) {
-    const moving = player.id === myId ? held.size > 0 : player.bot ? Math.hypot(player.gx - player.x, player.gy - player.y) > .5 : Math.hypot(player.tx - player.x, player.ty - player.y) > .2;
+    const moving = Math.hypot(player.vx || 0, player.vy || 0) > 2;
     player.phase += moving ? .2 : .06;
     const bob = moving ? Math.abs(Math.sin(player.phase * 2)) * 2.2 : Math.sin(time / 450 + player.phase) * .6;
     ctx.save();
@@ -2723,11 +2748,20 @@
       me.vx = dx * moveSpeed;
       me.vy = dy * moveSpeed;
       if (practiceMode && !me.tagger) countPracticeObstaclePasses(me, oldX, oldY, me.x, me.y);
-      if (!practiceMode && socket?.connected && timestamp - lastMoveSentAt >= 40) {
-        socket.emit('move', { x: me.x, y: me.y, angle: me.angle });
+    } else if (me) { me.vx = 0; me.vy = 0; }
+    if (!practiceMode && me?.alive && !gameOver) {
+      const blend = 1 - Math.exp(-18 * dt);
+      const correctionX = me.correctionX * blend, correctionY = me.correctionY * blend;
+      me.x = Math.max(10, Math.min(790, me.x + correctionX));
+      me.y = Math.max(10, Math.min(470, me.y + correctionY));
+      me.correctionX -= correctionX; me.correctionY -= correctionY;
+      // Send the latest position, including a stop, without queuing old movement.
+      if (socket?.connected && timestamp - lastMoveSentAt >= 50) {
+        const move = movementHistory.record(me.x, me.y);
+        socket.volatile.emit('move', { ...move, angle:me.angle, snapVersion:me.snapVersion });
         lastMoveSentAt = timestamp;
       }
-    } else if (me) { me.vx = 0; me.vy = 0; }
+    }
     if (practiceMode && !shopOpen) movePracticeBots(timestamp, dt);
     ctx.clearRect(0, 0, 800, 480);
     ctx.fillStyle = '#fbfaff'; ctx.fillRect(0, 0, 800, 480);
@@ -2798,7 +2832,12 @@
     for (const player of players.values()) {
       if (player.id !== myId && !player.bot) {
         const oldX = player.x, oldY = player.y;
-        player.x += (player.tx - player.x) * .23; player.y += (player.ty - player.y) * .23;
+        const renderTime = networkClock.serverTime + Math.max(0, timestamp - networkClock.receivedAt) - 100;
+        networkClock.renderTime = Math.max(networkClock.renderTime, renderTime);
+        const point = player.snapshots.sample(networkClock.renderTime) || { x:player.tx, y:player.ty };
+        const blend = 1 - Math.exp(-24 * dt);
+        player.x += (point.x - player.x) * blend;
+        player.y += (point.y - player.y) * blend;
         player.vx = dt > 0 ? (player.x - oldX) / dt : 0;
         player.vy = dt > 0 ? (player.y - oldY) / dt : 0;
       }
@@ -2815,8 +2854,12 @@
       $('timer').textContent = turnSeconds ? `00:${String(turnSeconds).padStart(2, '0')}` : '--:--';
       $('timer').previousElementSibling.textContent = '다음 술래 교대';
     }
-    updatePracticeActions(timestamp);
-    updatePracticePauseButton();
+    // Cooldown labels do not need a DOM rewrite for every animation frame.
+    if (timestamp - lastHudUpdateAt >= 100) {
+      updatePracticeActions(timestamp);
+      updatePracticePauseButton();
+      lastHudUpdateAt = timestamp;
+    }
     requestAnimationFrame(frame);
   }
 

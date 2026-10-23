@@ -492,12 +492,13 @@ app.use(express.static(__dirname, { index: 'index.html', dotfiles: 'ignore' }));
 function publicState(room) {
   const now = Date.now();
   return {
+    serverTime:now,
     players: [...room.players.values()].map(player => ({
       id:player.id, name:player.name, x:player.x, y:player.y, angle:player.angle, alive:player.alive,
       equippedItem:player.equippedItem, shieldUntil:player.shieldUntil, frozenUntil:player.frozenUntil,
       slowedUntil:player.slowedUntil, hiddenUntil:player.hiddenUntil, phaseUntil:player.phaseUntil,
       speedBoostUntil:player.speedBoostUntil, specialCooldownMs:Math.max(0, player.specialCooldownUntil - now),
-      anchor:player.anchor, snapVersion:player.snapVersion
+      anchor:player.anchor, snapVersion:player.snapVersion, lastMoveSeq:player.lastMoveSeq || 0
     })),
     taggerId: room.taggerId,
     nextTurnAt: room.nextTurnAt,
@@ -514,7 +515,10 @@ function publicState(room) {
     activeObstacleIndexes: room.obstacles.map((_, index) => index).filter(index => room.obstaclePassCounts[index] < OBSTACLE_PASS_LIMIT)
   };
 }
-function sendState(room) { io.to(room.code).emit('state', publicState(room)); }
+function sendState(room, volatile = false) {
+  const target = io.to(room.code);
+  (volatile ? target.volatile : target).emit('state', publicState(room));
+}
 function alivePlayers(room) { return [...room.players.values()].filter(player => player.alive); }
 function broadcastMatchmakingState(message = '') {
   const waitingCount = matchmakingQueue.size;
@@ -661,7 +665,7 @@ function makePlayer(id, name, spawn, room, socket) {
     shieldUntil:0, frozenUntil:0, slowedUntil:0, hiddenUntil:0, phaseUntil:0,
     speedBoostUntil:0, tagImmuneUntil:0, specialCooldownUntil:0, anchor:null, snapVersion:0,
     obstacleInside:room.obstacles.map(() => false), obstacleEntered:room.obstacles.map(() => false),
-    lastMoveAt:Date.now()
+    lastMoveAt:Date.now(), lastMoveSeq:0
   };
 }
 function moveTagger(player, targetX, targetY, room) {
@@ -679,6 +683,7 @@ function moveTagger(player, targetX, targetY, room) {
   player.y = y;
 }
 function moveOutsideObstacles(player, room = null) {
+  const oldX = player.x, oldY = player.y;
   const obstacles = room?.obstacles || [];
   for (let pass = 0; pass < obstacles.length; pass++) {
     const rect = obstacles.find((item, index) => (room?.obstaclePassCounts?.[index] ?? 0) < OBSTACLE_PASS_LIMIT && blocked(player.x, player.y, room) &&
@@ -697,6 +702,7 @@ function moveOutsideObstacles(player, room = null) {
     player.x = safe.x;
     player.y = safe.y;
   }
+  if (player.x !== oldX || player.y !== oldY) player.snapVersion++;
 }
 function touchesObstacle(x, y, rect) {
   return x + PLAYER_RADIUS > rect.x && x - PLAYER_RADIUS < rect.x + rect.width &&
@@ -1108,11 +1114,16 @@ io.on('connection', socket => {
     const player = room?.players.get(socket.id);
     if (!player || !player.alive || room.gameOver || !Number.isFinite(data?.x) || !Number.isFinite(data?.y)) return;
     const now = Date.now();
+    const sequenced = Number.isSafeInteger(data.seq) && data.seq > 0;
+    if (sequenced && data.seq <= player.lastMoveSeq) return;
+    // Ignore packets created before a teleport, respawn or forced displacement.
+    if (Number.isFinite(data.snapVersion) && data.snapVersion !== player.snapVersion) return;
+    if (sequenced) player.lastMoveSeq = data.seq;
     if (player.frozenUntil > now) return;
     const x = clamp(data.x, PLAYER_RADIUS, WIDTH - PLAYER_RADIUS);
     const y = clamp(data.y, PLAYER_RADIUS, HEIGHT - PLAYER_RADIUS);
     const oldX = player.x, oldY = player.y;
-    const elapsed = clamp((now - (player.lastMoveAt || now)) / 1000, .025, .2);
+    const elapsed = clamp((now - (player.lastMoveAt || now)) / 1000, .025, .5);
     const baseSpeed = socket.id === room.taggerId ? 210 : 273;
     const speedFactor = (player.slowedUntil > now ? .42 : 1) * (player.speedBoostUntil > now ? 1.65 : 1) * (adminPowersFor(socket).speed ? 2.5 : 1);
     const maxDistance = baseSpeed * speedFactor * elapsed + 18;
@@ -1222,7 +1233,7 @@ setInterval(() => {
         }
       }
     }
-    sendState(room);
+    sendState(room, true);
   }
 }, 50);
 
