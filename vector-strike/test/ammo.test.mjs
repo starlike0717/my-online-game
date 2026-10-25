@@ -10,7 +10,7 @@ const source=await readFile(new URL('../dist/game.js',import.meta.url),'utf8');
 function body(name){const a=source.indexOf('function '+name+'('),b=source.indexOf('\nfunction ',a+1);return source.slice(a,b)}
 function fixture(weapon=0){let now=10000;const arena=new Arena('AMMO',0,()=>now);arena.blocks=[];const p=arena.join('A',weapon);return{arena,p,step(ms){now+=ms},reload(){assert.equal(arena.reload(p.id),true);now+=weapons[p.weapon].reload*1000+1;arena.completeReload(p)}}}
 test('finite magazines conserve ammunition for every ranged weapon including partial reloads',()=>{
- const ranged=weapons.filter(w=>w.mechanic!=='melee');assert.equal(ranged.length,52);assert.ok(new Set(ranged.map(w=>w.mag)).size>=15);assert.ok(new Set(ranged.map(w=>w.reserve)).size>=20);
+ const ranged=weapons.filter(w=>w.mechanic!=='melee');assert.equal(ranged.length,53);assert.ok(new Set(ranged.map(w=>w.mag)).size>=15);assert.ok(new Set(ranged.map(w=>w.reserve)).size>=20);
  for(const w of ranged){assert.ok(Number.isInteger(w.reserve)&&w.reserve>0,w.name);for(const reserve of [0,1,3,w.reserve])for(const ammo of [0,w.mag-1,w.mag]){const next=refillMagazine(w,ammo,reserve);assert.equal(next.ammo+next.reserve,ammo+reserve,w.name);assert.ok(next.ammo<=w.mag&&next.reserve>=0,w.name)}}
 });
 test('server reloads only remaining rounds, rejects empty reserve, and cannot refill by switching',()=>{

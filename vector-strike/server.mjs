@@ -1,3 +1,4 @@
+import {normalizeEconomy,publicEconomy,purchase,credit,waveReward,winReward} from './dist/economy.js';
 import http from 'node:http';
 import {EventEmitter} from 'node:events';
 import {Server as SocketIOServer} from 'socket.io';
@@ -19,7 +20,7 @@ const dataDir=path.resolve(process.env.DATA_DIR||path.join(base,'.data'));
 const dataFile=path.join(dataDir,'accounts.json');
 const derive=promisify(scrypt);
 const hashToken=t=>createHash('sha256').update(t).digest('hex');
-const rooms=new Map(),sessions=new Map(),users=new Map(),guests=new Map(),rateLimits=new Map(),activeIdentities=new Map();
+const rooms=new Map(),sessions=new Map(),users=new Map(),guests=new Map(),rateLimits=new Map(),activeIdentities=new Map(),practiceRuns=new Map();
 const matchmaker=new Matchmaker();let closing=false;
 let writeQueue=Promise.resolve(),authInFlight=0;
 await mkdir(dataDir,{recursive:true,mode:0o700});
@@ -27,7 +28,7 @@ try{const data=JSON.parse(await readFile(dataFile,'utf8'));for(const u of data.u
 function persist(){const text=JSON.stringify({users:[...users.values()],sessions:[...sessions.values()],guests:[...guests.values()]});const next=writeQueue.catch(()=>{}).then(async()=>{await writeFile(dataFile+'.tmp',text,{mode:0o600});await rename(dataFile+'.tmp',dataFile)});writeQueue=next;return next}
 function tokenFrom(req){const auth=req.headers.authorization;return typeof auth==='string'&&auth.startsWith('Bearer ')?auth.slice(7):''}
 function sessionUser(token){if(typeof token!=='string'||token.length>128)return null;const session=sessions.get(hashToken(token));return session&&session.expires>Date.now()?users.get(session.username)||null:null}
-function publicUser(u){return {username:u.username,createdAt:u.createdAt,records:u.records||[],progress:publicProgress(u.progress)}}
+function publicUser(u){return {username:u.username,createdAt:u.createdAt,records:u.records||[],progress:publicProgress(u.progress),economy:publicEconomy(u.economy)}}
 function guestFor(token){return typeof token==='string'&&token.length<=128?guests.get(hashToken(token))||null:null}
 function identityFor(m){const user=sessionUser(m.token||'');if(user)return {key:'u:'+user.username,holder:user,name:user.username};const guest=guestFor(m.guestToken||'');return guest?{key:'g:'+guest.hash,holder:guest,name:String(m.name||guest.name||'GUEST').replace(/[<>\x00-\x1f]/g,'').trim().slice(0,20)||'GUEST'}:null}
 function holderFor(key){return key?.startsWith('u:')?users.get(key.slice(2)):key?.startsWith('g:')?guests.get(key.slice(2)):null}
@@ -44,15 +45,24 @@ const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost'),route=url.pathname,ip=ipOf(req);
     if(route.startsWith('/api/')){
       if(!limit('api:'+ip,240,60000))return json(res,429,{error:'요청이 많습니다. 잠시 후 다시 시도하세요.'});
-      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
+      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
       if(route==='/api/guest'&&req.method==='POST'){
         const data=await body(req);let guest=guestFor(data.guestToken),guestToken=data.guestToken;
         if(!guest){guestToken=randomBytes(32).toString('base64url');const hash=hashToken(guestToken);guest={hash,id:randomBytes(12).toString('hex'),name:'GUEST',createdAt:Date.now(),progress:normalizeProgress(),records:[]};guests.set(hash,guest);await persist()}
-        return json(res,200,{guestToken,profile:publicProgress(guest.progress),records:guest.records||[]});
+        return json(res,200,{guestToken,profile:publicProgress(guest.progress),economy:publicEconomy(guest.economy),records:guest.records||[]});
       }
       if(route==='/api/profile'&&req.method==='GET'){
         const user=sessionUser(tokenFrom(req)),guest=guestFor(req.headers['x-guest-token']);const holder=user||guest;
-        return holder?json(res,200,{profile:publicProgress(holder.progress)}):json(res,401,{error:'게스트 또는 계정 연결을 확인해 주세요.'});
+        return holder?json(res,200,{profile:publicProgress(holder.progress),economy:publicEconomy(holder.economy)}):json(res,401,{error:'게스트 또는 계정 연결을 확인해 주세요.'});
+      }
+      if(['/api/shop/buy','/api/wave/start','/api/wave/reward'].includes(route)&&req.method==='POST'){
+        const holder=sessionUser(tokenFrom(req))||guestFor(req.headers['x-guest-token']);if(!holder)return json(res,401,{error:'게스트 또는 계정 연결을 확인하세요.'});const data=await body(req);
+        if(route==='/api/shop/buy'){try{holder.economy=purchase(holder.economy,data.weapon)}catch(error){return json(res,400,{error:error.message})}await persist();return json(res,200,{economy:publicEconomy(holder.economy)})}
+        if(route==='/api/wave/start'){const runId=randomBytes(18).toString('hex');practiceRuns.set(runId,{holder,wave:0,kills:0,at:Date.now(),expires:Date.now()+7200000});return json(res,200,{runId})}
+        const run=practiceRuns.get(data.runId);if(!run||run.holder!==holder||run.expires<Date.now())return json(res,400,{error:'웨이브 보상 세션이 만료되었습니다.'});
+        if(Number.isInteger(data.wave)&&data.wave<=run.wave)return json(res,200,{economy:publicEconomy(holder.economy),amount:0});
+        if(!Number.isInteger(data.wave)||data.wave!==run.wave+1||!Number.isInteger(data.kills)||data.kills<run.kills+Math.min(3+data.wave*2,16)||Date.now()-run.at<1500)return json(res,400,{error:'완료한 웨이브를 확인할 수 없습니다.'});
+        const reward=credit(holder.economy,'wave:'+data.runId+':'+data.wave,waveReward(data.wave));holder.economy=reward.economy;run.wave=data.wave;run.kills=data.kills;run.at=Date.now();await persist();return json(res,200,{economy:publicEconomy(holder.economy),amount:reward.amount});
       }
       if((route==='/api/register'||route==='/api/login')&&req.method==='POST'){
         if(!limit('auth:'+ip,15,15*60000)||authInFlight>=8)return json(res,429,{error:'로그인 시도가 많습니다. 15분 후 다시 시도하세요.'});
@@ -101,16 +111,16 @@ function acknowledgeLoadout(ws,type,request,accepted){const p=ws.room.players.ge
 function broadcast(room,data){for(const ws of peers)if(ws.room===room)send(ws,data)}
 function createRoom(map,teamSize,kind){if(rooms.size>=100)throw new Error('서버의 경기 방이 가득 찼습니다. 잠시 후 다시 시도하세요.');let code;do{code=randomBytes(3).toString('hex').toUpperCase()}while(rooms.has(code));const room=new Arena(code,map,Date.now,{teamSize,kind});rooms.set(code,room);return room}
 function identify(ws,m){if(m.protocol!==3)throw new Error('게임이 업데이트되었습니다. 페이지를 새로고침하고 다시 참가하세요.');const identity=identityFor(m);if(!identity)throw new Error('게스트 정보를 연결한 뒤 다시 시도하세요.');const other=activeIdentities.get(identity.key);if(other&&other!==ws&&other.readyState===WebSocket.OPEN)throw new Error('이 플레이어는 다른 탭에서 대기하거나 경기 중입니다. 먼저 기존 경기를 종료하세요.');ws.identity=identity;activeIdentities.set(identity.key,ws);return identity}
-function attach(ws,room,weapon){const identity=ws.identity,profile=publicProgress(identity.holder.progress);const p=room.join(identity.name,weapon,{profileKey:identity.key,level:profile.level,rating:profile.rating});ws.room=room;ws.playerId=p.id;ws.queueEntry=null;clearTimeout(ws.joinTimeout);const snapshot=room.snapshot();send(ws,{type:'welcome',id:p.id,room:room.code,map:room.map,self:snapshot.players.find(v=>v.id===p.id),snapshot});broadcast(room,{type:'joined',name:p.name,count:room.players.size});}
+function attach(ws,room,weapon){const identity=ws.identity,profile=publicProgress(identity.holder.progress);if(!normalizeEconomy(identity.holder.economy).owned.includes(weapon))throw new Error('구매한 무기만 장착할 수 있습니다.');const p=room.join(identity.name,weapon,{profileKey:identity.key,level:profile.level,rating:profile.rating});ws.room=room;ws.playerId=p.id;ws.queueEntry=null;clearTimeout(ws.joinTimeout);const snapshot=room.snapshot();send(ws,{type:'welcome',id:p.id,room:room.code,map:room.map,self:snapshot.players.find(v=>v.id===p.id),snapshot});broadcast(room,{type:'joined',name:p.name,count:room.players.size});}
 function cancelQueue(ws){if(ws.queueEntry){matchmaker.cancel(ws.queueEntry.key);ws.queueEntry=null}if(ws.identity&&!ws.room&&activeIdentities.get(ws.identity.key)===ws)activeIdentities.delete(ws.identity.key)}
 function finalise(room){
   if(room.phase!=='finished'||room.resultApplied)return;room.resultApplied=true;
   const context={id:room.id,winner:room.winner,reason:room.reason,duration:Math.max(0,room.finishedAt-room.startedAt),teamRatings:room.teamRatings};
   const outcomes=new Map();
   for(const p of room.players.values()){
-    const holder=holderFor(p.profileKey);if(!holder)continue;const reward=applyResult(holder,p,context);
+    const holder=holderFor(p.profileKey);if(!holder)continue;const reward=applyResult(holder,p,context);const cash=credit(holder.economy,'match:'+room.id,reward.outcome==='win'?winReward(room.teamSize):0);holder.economy=cash.economy;
     const record={id:room.id,date:Date.now(),map:room.map,mode:'online',matchMode:`${room.teamSize}v${room.teamSize}`,outcome:reward.outcome,kills:p.kills,deaths:p.deaths,assists:p.assists,score:p.kills*100+p.assists*30,wave:0,time:Math.floor(context.duration/1000),xp:reward.xp,level:reward.levelAfter};
-    holder.records=(holder.records||[]).filter(r=>r.id!==record.id).concat(record).slice(-200);outcomes.set(p.id,{...reward,record});
+    holder.records=(holder.records||[]).filter(r=>r.id!==record.id).concat(record).slice(-200);outcomes.set(p.id,{...reward,record,coins:cash.amount,economy:publicEconomy(holder.economy)});
   }
   persist().then(()=>{for(const ws of peers)if(ws.room===room)send(ws,{type:'matchEnd',match:room.matchInfo(),self:outcomes.get(ws.playerId)||null,players:room.snapshot().players});room.resultDelivered=true}).catch(error=>{console.error('Match result persistence failed:',error.code||error.message);for(const ws of peers)if(ws.room===room)send(ws,{type:'matchEnd',match:room.matchInfo(),self:outcomes.get(ws.playerId)||null,saved:false,players:room.snapshot().players})});
 }
@@ -128,7 +138,7 @@ wss.on('connection',(ws,req)=>{
     if(m.type==='queueCancel'){cancelQueue(ws);send(ws,{type:'queueCancelled'});return}
     if((m.type==='queue'||m.type==='join')&&!ws.playerId&&!ws.queueEntry){
       try{
-        const identity=identify(ws,m);if(!validTeamSize(m.teamSize))throw new Error('1대1, 2대2, 3대3, 4대4 중 선택하세요.');
+        const identity=identify(ws,m);if(!normalizeEconomy(identity.holder.economy).owned.includes(Number(m.weapon)||0))throw new Error('구매한 무기만 장착할 수 있습니다.');if(!validTeamSize(m.teamSize))throw new Error('1대1, 2대2, 3대3, 4대4 중 선택하세요.');
         if(m.type==='queue'){const profile=publicProgress(identity.holder.progress);ws.queueEntry=matchmaker.enqueue({key:identity.key,ws,weapon:Number(m.weapon)||0,teamSize:m.teamSize,level:profile.level,rating:profile.rating});clearTimeout(ws.joinTimeout);send(ws,matchmaker.status(ws.queueEntry));matchQueued();return}
         const code=typeof m.room==='string'?m.room.trim().toUpperCase():'';if(code&&!/^[A-Z0-9]{4,8}$/.test(code))throw new Error('방 코드는 영문·숫자 4~8자입니다.');
         const room=code?rooms.get(code):createRoom(Number(m.map)||0,m.teamSize,'code');if(!room)throw new Error('방을 찾을 수 없습니다. 코드를 확인하세요.');attach(ws,room,Number(m.weapon)||0);
@@ -140,7 +150,7 @@ wss.on('connection',(ws,req)=>{
     if(m.type==='shoot'){const result=ws.room.shoot(ws.playerId,m.dir,{aim:m.aim===true});acknowledgeLoadout(ws,'shotAck',m,result.accepted)}
     if(m.type==='draw')ws.room.draw(ws.playerId,m.active!==false);
     if(m.type==='reload'){const accepted=ws.room.reload(ws.playerId);acknowledgeLoadout(ws,'reloadAck',m,accepted)}
-    if(m.type==='equip'){const p=ws.room.players.get(ws.playerId),accepted=ws.room.equip(ws.playerId,m.weapon)||p.health>0&&ws.room.phase!=='finished'&&p.weapon===m.weapon;acknowledgeLoadout(ws,'equipAck',m,accepted)}
+    if(m.type==='equip'){const p=ws.room.players.get(ws.playerId),accepted=normalizeEconomy(ws.identity.holder.economy).owned.includes(m.weapon)&&(ws.room.equip(ws.playerId,m.weapon)||p.health>0&&ws.room.phase!=='finished'&&p.weapon===m.weapon);acknowledgeLoadout(ws,'equipAck',m,accepted)}
   });
   ws.on('close',()=>{peers.delete(ws);clearTimeout(ws.joinTimeout);cancelQueue(ws);if(ws.identity&&activeIdentities.get(ws.identity.key)===ws)activeIdentities.delete(ws.identity.key);if(ws.room&&!closing){const room=ws.room;room.remove(ws.playerId);broadcast(room,{type:'left',count:[...room.players.values()].filter(p=>p.connected).length});finalise(room);if(![...room.players.values()].some(p=>p.connected))rooms.delete(room.code)}});ws.on('error',()=>{});
 });

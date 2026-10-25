@@ -6,7 +6,7 @@ import { damageForHit,rayActor,shotDirections,spreadForShot } from '../dist/comb
 import { Arena } from '../server/arena.mjs';
 const direction=(x,y,z)=>{const len=Math.hypot(x,y,z);return [x/len,y/len,z/len]};
 test('every weapon has valid body/head and distance profiles; examples have distinct damage',()=>{
- assert.equal(weapons.length,72);
+ assert.equal(weapons.length,73);
  for(const w of weapons){assert.ok(w.damage>0&&w.headMultiplier>=1&&w.rangeEnd>w.rangeStart);assert.equal(damageForHit(w,false,0),w.damage);assert.equal(damageForHit(w,true,0),Math.round(w.damage*w.headMultiplier*10)/10);assert.equal(damageForHit(w,false,500),Math.round(w.damage*w.minDamage*10)/10);assert.ok(damageForHit(w,false,(w.rangeStart+w.rangeEnd)/2)<=w.damage)}
  assert.deepEqual([weapons[0].damage,weapons[4].damage,weapons[28].damage],[26,34,95]);
  assert.deepEqual([damageForHit(weapons[0],true),damageForHit(weapons[4],true),damageForHit(weapons[28],true)],[46.8,56.1,190]);
