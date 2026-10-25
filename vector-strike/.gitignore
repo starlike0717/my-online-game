@@ -1,0 +1,8 @@
+node_modules/
+.openai/*.local.*
+*.tar.gz
+.DS_Store
+
+.data/
+.runtime/
+.tools/

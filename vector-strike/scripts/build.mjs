@@ -1,0 +1,17 @@
+import { build } from 'esbuild';
+import { readFile,writeFile,rename,rm } from 'node:fs/promises';
+import { execFileSync } from 'node:child_process';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
+const root=path.dirname(path.dirname(fileURLToPath(import.meta.url)));
+await build({entryPoints:[path.join(root,'dist/game.js')],outfile:path.join(root,'dist/app.bundle.js'),bundle:true,format:'iife',target:'es2022',minify:true,legalComments:'inline'});
+let html=await readFile(path.join(root,'dist/index.html'),'utf8');
+const css=(await readFile(path.join(root,'dist/style.css'),'utf8')).replace(/@import url\([^;]+;/,'');
+const bundle=await readFile(path.join(root,'dist/app.bundle.js'),'utf8');
+const runtime=await readFile(path.join(root,'dist/runtime-config.js'),'utf8');
+html=html.replace('<link rel="stylesheet" href="style.css">',()=>`<style>${css}</style>`).replace('<script src="runtime-config.js"></script>',()=>`<script>${runtime.replace(/<\/script/gi,'<\\/script')}</script>`).replace('<script defer src="app.bundle.js"></script>',()=>`<script>${bundle.replace(/<\/script/gi,'<\\/script')}</script>`).replace('<title>VECTOR — Break the front line</title>','<title>VECTOR — HTML 실행판</title>');
+if(/<script[^>]+src=/i.test(html)||html.split('</script>').length!==3)throw new Error('Standalone HTML must contain only its two inline scripts.');
+await writeFile(path.join(root,'dist/vector-offline.html'),html);
+const files=['package.json','package-lock.json','server.mjs','server/arena.mjs','server/matchmaker.mjs','server/progression.mjs','README.md','RIVALS-COMPARISON.md','Dockerfile','render.yaml','Start VECTOR.command','scripts/build.mjs','scripts/start-online.mjs','scripts/stop-online.mjs','test/arena.test.mjs','test/combat.test.mjs','test/special-weapons.test.mjs','test/socketio.test.mjs','test/movement.test.mjs','test/weapon-model.test.mjs','test/inventory-sync.test.mjs','test/remote-motion.test.mjs','test/ammo.test.mjs','test/mouse-look.test.mjs','test/agent-feedback.test.mjs','test/health.test.mjs','test/server.test.mjs','test/matchmaker.test.mjs','test/progression.test.mjs','test/team-arena.test.mjs','test/matchmaking-server.test.mjs','test/backend-migration.test.mjs','dist/index.html','dist/style.css','dist/game.js','dist/services.js','dist/catalog.js','dist/combat.js','dist/projectiles.js','dist/movement.js','dist/ammo.js','dist/mouse-look.js','dist/runtime-config.js','dist/app.bundle.js','dist/vector-offline.html','dist/vendor/three.module.js','dist/vendor/THREE-LICENSE.txt'];
+const temp=path.join(root,'.vector-node.tmp.zip');await rm(temp,{force:true});execFileSync('zip',['-q',temp,...files],{cwd:root});await rename(temp,path.join(root,'dist/vector-node.zip'));
+console.log('Built app.bundle.js, standalone HTML, and Node.js source ZIP.');
