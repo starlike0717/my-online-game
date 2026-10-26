@@ -18,5 +18,5 @@ test('elimination healing works above 100 and caps at 200',()=>{
 });
 
 test('a cleared wave fully restores 200 HP and requests exactly one wave payout',async()=>{
- const payouts=[],c=vm.createContext({MAX_HEALTH,waveDelay:0,wave:4,kills:24,score:0,player:{health:7},services:{rewardWave(wave,kills){payouts.push([wave,kills]);return Promise.resolve(200)}},announce(){},notice(){},toast(){},updateHud(){}});new vm.Script(body('completeWave')).runInContext(c);c.completeWave();assert.equal(c.player.health,200);assert.equal(c.waveDelay,3);assert.deepEqual(payouts,[[4,24]]);await Promise.resolve();
+ const payouts=[],c=vm.createContext({MAX_HEALTH,waveDelay:0,wave:4,kills:24,score:0,player:{health:7},services:{rewardWave(wave,kills){payouts.push([wave,kills]);return Promise.resolve(200)}},announce(){},notice(){},toast(){},updateHud(){},refillAllAmmo(){c.refills=(c.refills||0)+1}});new vm.Script(body('completeWave')).runInContext(c);c.completeWave();assert.equal(c.player.health,200);assert.equal(c.waveDelay,3);assert.equal(c.refills,1);assert.deepEqual(payouts,[[4,24]]);await Promise.resolve();
 });

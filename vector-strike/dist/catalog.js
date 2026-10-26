@@ -63,3 +63,28 @@ const meleeProfiles=[
 for(const [name,ko,shape,damage,headMultiplier,rate,reach,speed,length]of meleeProfiles)weapons.push({...weapons[52],id:weapons.length,name,ko,shape,damage,headMultiplier,rate,reach,speed,length,rangeStart:reach,rangeEnd:reach+.1,swingTime:Math.min(.48,.7/rate),color:0x9eabb5});
 
 weapons.push({...weapons[28],id:weapons.length,name:'OS-1 OBLIVION',damage:240,headMultiplier:1.3,rate:.45,mag:1,reserve:5,reload:3.8,speed:.78,rangeStart:80,rangeEnd:160,minDamage:.9,oneShot:true});
+
+// Shared, readable abilities for all twenty melee weapons. IDs stay stable.
+const meleeTraits=[
+ {kind:'jump',title:'에어 스텝',extraJumps:1,backMultiplier:1.5},
+ {kind:'heal',title:'흡혈',heal:18,cooldown:3,backMultiplier:1.7},
+ {kind:'backstab',title:'암살',backstab:true,backMultiplier:2},
+ {kind:'backstab',title:'그림자 처형',backstab:true,backMultiplier:2},
+ {kind:'jump',title:'공중 베기',extraJumps:1,backMultiplier:1.6},
+ {kind:'heal',title:'생명 베기',heal:25,cooldown:4,backMultiplier:1.8},
+ {kind:'stun',title:'충격 베기',stun:.65,cooldown:5,backMultiplier:1.5},
+ {kind:'backstab',title:'급소 찌르기',backstab:true,backMultiplier:2},
+ {kind:'ammo',title:'탄약 회수',ammoFraction:.2,cooldown:8,backMultiplier:1.7},
+ {kind:'heal',title:'전사의 회복',heal:35,cooldown:5,backMultiplier:1.8},
+ {kind:'stun',title:'발목 묶기',stun:.75,cooldown:6,backMultiplier:1.6},
+ {kind:'stun',title:'충격파',stun:.8,cooldown:6,backMultiplier:1.6},
+ {kind:'stun',title:'타이탄의 강타',stun:1,cooldown:7,backMultiplier:1.5},
+ {kind:'ammo',title:'보급 타격',ammoFraction:.25,cooldown:8,backMultiplier:1.7},
+ {kind:'stun',title:'전기 충격',stun:.5,cooldown:4,backMultiplier:1.6},
+ {kind:'ammo',title:'보급 찌르기',ammoFraction:.2,cooldown:8,backMultiplier:1.8},
+ {kind:'stun',title:'속박',stun:.8,cooldown:6,backMultiplier:1.7},
+ {kind:'jump',title:'구름 걷기',extraJumps:1,backMultiplier:1.6},
+ {kind:'heal',title:'영혼 수확',heal:30,cooldown:4.5,backMultiplier:1.8},
+ {kind:'ammo',title:'보급품 해체',ammoFraction:.3,cooldown:9,backMultiplier:1.7}
+];
+weapons.filter(w=>w.mechanic==='melee').forEach((w,i)=>{w.perk=meleeTraits[i];w.backMultiplier=w.perk.backMultiplier;w.backstab=w.perk.backstab===true;w.extraJumps=w.perk.extraJumps||0});

@@ -28,7 +28,7 @@ test('server rocket hits are delayed and do not award a kill for self eliminatio
  const self=fixture(51);self.a.health=1;self.b.x=20;self.arena.shoot(self.a.id,[0,-1,0]);self.advance(100);assert.equal(self.a.health,0);assert.equal(self.a.kills,0);assert.equal(self.a.deaths,1);
 });
 test('knife has finite reach, no consumed ammo, and cannot attack through cover',()=>{
- const{arena,a,b,advance}=fixture(52);arena.shoot(a.id,dir(0,-.35,-8));assert.equal(b.health,MAX_HEALTH);b.z=16;advance(600);arena.shoot(a.id,dir(0,-.35,-2));assert.equal(b.health,MAX_HEALTH-45);assert.equal(a.ammo,1);advance(600);arena.blocks=[{min:[-1,0,16.5],max:[1,3,16.7]}];arena.shoot(a.id,dir(0,-.35,-2));assert.equal(b.health,MAX_HEALTH-45);
+ const{arena,a,b,advance}=fixture(52);b.yaw=Math.PI;arena.shoot(a.id,dir(0,-.35,-8));assert.equal(b.health,MAX_HEALTH);b.z=16;advance(600);arena.shoot(a.id,dir(0,-.35,-2));assert.equal(b.health,MAX_HEALTH-45);assert.equal(a.ammo,1);advance(600);arena.blocks=[{min:[-1,0,16.5],max:[1,3,16.7]}];arena.shoot(a.id,dir(0,-.35,-2));assert.equal(b.health,MAX_HEALTH-45);
 });
 test('weapon switches retain magazines and cannot replace reloading or bypass equip delay',()=>{
  const{arena,a,advance}=fixture(0);arena.shoot(a.id,[0,0,-1]);const left=a.ammo;assert.equal(arena.equip(a.id,42),true);assert.equal(arena.shoot(a.id,[0,0,-1]).accepted,false);advance(300);assert.equal(arena.equip(a.id,0),true);assert.equal(a.ammo,left);advance(300);a.ammo=0;arena.equip(a.id,42);advance(300);arena.equip(a.id,0);assert.equal(a.ammo,0);assert.equal(arena.reload(a.id),true);advance(2000);assert.equal(a.ammo,weapons[0].mag);assert.equal(arena.equip(a.id,weapons.length),false);

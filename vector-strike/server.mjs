@@ -45,7 +45,7 @@ const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost'),route=url.pathname,ip=ipOf(req);
     if(route.startsWith('/api/')){
       if(!limit('api:'+ip,240,60000))return json(res,429,{error:'요청이 많습니다. 잠시 후 다시 시도하세요.'});
-      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
+      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,meleeAbilities:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
       if(route==='/api/guest'&&req.method==='POST'){
         const data=await body(req);let guest=guestFor(data.guestToken),guestToken=data.guestToken;
         if(!guest){guestToken=randomBytes(32).toString('base64url');const hash=hashToken(guestToken);guest={hash,id:randomBytes(12).toString('hex'),name:'GUEST',createdAt:Date.now(),progress:normalizeProgress(),records:[]};guests.set(hash,guest);await persist()}

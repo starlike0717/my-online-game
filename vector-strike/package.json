@@ -6,7 +6,7 @@
   "description": "A procedural 3D arena FPS with 4 maps, 50 firearms, bow, rocket launcher, and 20 melee weapons",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check server/arena.mjs && node --check server/matchmaker.mjs && node --check server/progression.mjs && node --check dist/projectiles.js && node --check dist/movement.js && node --check dist/combat.js && node --check dist/ammo.js && node --check dist/mouse-look.js && node --check dist/economy.js && node --check dist/view.js && node --check dist/audio.js && node --check dist/game.js && node --check dist/services.js",
+    "check": "node --check server.mjs && node --check server/arena.mjs && node --check server/matchmaker.mjs && node --check server/progression.mjs && node --check dist/projectiles.js && node --check dist/movement.js && node --check dist/combat.js && node --check dist/ammo.js && node --check dist/mouse-look.js && node --check dist/melee.js && node --check dist/economy.js && node --check dist/view.js && node --check dist/audio.js && node --check dist/game.js && node --check dist/services.js",
     "build": "node scripts/build.mjs",
     "test": "node --test test/*.test.mjs",
     "online": "node scripts/start-online.mjs",
