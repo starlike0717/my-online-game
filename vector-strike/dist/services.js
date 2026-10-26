@@ -25,9 +25,9 @@ async function request(method,route,data){
  try{const res=await fetch(backend+route,{method,headers:{...(data?{'Content-Type':'application/json'}:{}),...(token?{Authorization:'Bearer '+token}:{}),...(guestToken?{'X-Guest-Token':guestToken}:{})},body:data?JSON.stringify(data):undefined,signal:controller.signal,cache:'no-store'});let result;try{result=await res.json()}catch{throw new Error('현재 주소에서 VECTOR 온라인 API를 찾을 수 없습니다.')}if(!res.ok){const error=new Error(result.error||'요청을 완료하지 못했습니다.');error.status=res.status;throw error}return result}catch(error){if(error.name==='AbortError'||error instanceof TypeError)throw new Error('서버에 연결할 수 없습니다. 실행 상태와 주소를 확인하세요.');throw error}finally{clearTimeout(timeout)}
 }
 function updateAccount(){
- $('accountName').textContent=account?.username||'GUEST';$('accountOpen').innerHTML=account?'내 계정 ✓':'로그인 <span>선택</span>';
+ $('accountName').textContent=account?(account.username+(account.role==='admin'?' · ADMIN':'')):'GUEST';$('accountOpen').innerHTML=account?'내 계정 ✓':'로그인 <span>선택</span>';
  $('onlineName').value=account?.username||get('nickname','GUEST-'+Math.floor(Math.random()*900+100));$('onlineName').readOnly=!!account;
- $('authTabs').hidden=!!account;$('authForm').hidden=!!account;$('logoutBtn').hidden=!account;$('authTitle').textContent=account?`${account.username} 님, 접속 중`:'게스트로도 자유롭게.';
+ $('authTabs').hidden=!!account;$('authForm').hidden=!!account;$('logoutBtn').hidden=!account;$('authTitle').textContent=account?`${account.username} 님, ${account.role==='admin'?'관리자':'접속 중'}`:'게스트로도 자유롭게.';
  $('authDescription').textContent=account?'이 계정의 레벨·실력 점수·전투 기록은 연결된 서버에 저장됩니다.':'로그인 없이 모든 맵과 매칭을 사용할 수 있습니다. 게스트와 계정의 레벨은 따로 보관됩니다.';
 }
 function updateProfile(profile){
@@ -44,7 +44,7 @@ async function refreshIdentity(){
 }
 function checkServer(){
  if(checking)return checking;const revision=generation;
- checking=(async()=>{$('onlineServerStatus').textContent='서버 연결 확인 중…';try{const result=await request('GET','/api/health');if(revision!==generation)return false;if(!result.online||!result.matchmaking||!result.socketIo||!result.inventorySync||!result.finiteAmmo||!result.economy||!result.meleeAbilities||result.version<3)throw new Error('매칭을 지원하는 최신 Node.js 서버로 업데이트해 주세요.');await refreshIdentity();if(revision!==generation)return false;ready=true;$('onlineServerStatus').textContent=`서버 연결됨 · ${result.players}명 접속 · ${result.queued}명 매칭 대기`;$('onlineServerStatus').classList.add('ready');$('serverBadgeText').textContent='온라인 매칭 가능';return true}catch(error){if(revision!==generation)return false;ready=false;$('onlineServerStatus').textContent=backend?error.message:'Node.js 서버 주소를 입력해 주세요.';$('onlineServerStatus').classList.remove('ready');$('serverBadgeText').textContent='게스트 플레이';return false}finally{if(revision===generation)checking=null}})();return checking;
+ checking=(async()=>{$('onlineServerStatus').textContent='서버 연결 확인 중…';try{const result=await request('GET','/api/health');if(revision!==generation)return false;if(!result.online||!result.matchmaking||!result.socketIo||!result.inventorySync||!result.finiteAmmo||!result.economy||!result.meleeAbilities||!result.sidearmMobility||result.version<3)throw new Error('매칭을 지원하는 최신 Node.js 서버로 업데이트해 주세요.');await refreshIdentity();if(revision!==generation)return false;ready=true;$('onlineServerStatus').textContent=`서버 연결됨 · ${result.players}명 접속 · ${result.queued}명 매칭 대기`;$('onlineServerStatus').classList.add('ready');$('serverBadgeText').textContent='온라인 매칭 가능';return true}catch(error){if(revision!==generation)return false;ready=false;$('onlineServerStatus').textContent=backend?error.message:'Node.js 서버 주소를 입력해 주세요.';$('onlineServerStatus').classList.remove('ready');$('serverBadgeText').textContent='게스트 플레이';return false}finally{if(revision===generation)checking=null}})();return checking;
 }
 function renderMode(){
  const queued=net.queued||net.connecting;$('matchSetup').hidden=net.queued;$('queuePanel').hidden=!net.queued;$('onlineJoinBtn').hidden=net.queued;

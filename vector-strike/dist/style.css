@@ -38,3 +38,7 @@ body.mouse-look,body.mouse-look *{cursor:none!important}#crosshair{--turn:0deg;t
 .mouse-capture-hint{position:fixed;z-index:16;left:50%;top:12%;transform:translateX(-50%);display:flex;flex-direction:column;align-items:center;gap:8px;padding:12px 18px;background:#111c13e8;border:1px solid #d3f87866;border-radius:8px;max-width:90vw;text-align:center;box-shadow:0 5px 25px #0004}.mouse-capture-hint button{font-size:13px;color:var(--lime);font-weight:700}.mouse-capture-hint span{font-size:10px;color:#c0ccb7}.mouse-capture-hint a{text-decoration:underline;text-underline-offset:3px}body.mouse-look .mouse-capture-hint,body.mouse-look .mouse-capture-hint *{cursor:pointer!important}
 
 .melee-perk-hud{font-size:9px;line-height:1.5;color:#cfedab;margin-top:7px;letter-spacing:0;max-width:240px}
+
+.mobility-hud{font-size:9px;color:#aee3ef;line-height:1.5;margin-top:4px}.touch-actions #touchDash{border-color:#95d7ef;color:#c7f1ff}
+
+#scopeOverlay{background:radial-gradient(circle at center,transparent 0 30vmin,#02070533 75vmin)}

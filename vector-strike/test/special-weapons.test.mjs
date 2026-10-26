@@ -38,3 +38,7 @@ test('reload expiry is honored by the next action without waiting for the 50ms s
  a.ammo=0;assert.equal(arena.reload(a.id),true);now=a.reloadAt+1;assert.equal(arena.equip(a.id,42),true);assert.equal(a.inventory.get(0),weapons[0].mag);
  now+=300;arena.equip(a.id,50);now+=300;a.ammo=0;assert.equal(arena.reload(a.id),true);now=a.reloadAt+1;assert.equal(arena.draw(a.id),true);assert.equal(a.ammo,1);assert.equal(a.reloadAt,0);
 });
+
+test('crossbows fire bolts immediately without a draw packet and conserve finite magazines and reserves',()=>{
+ for(const id of [73,74]){const f=fixture(id),w=weapons[id];for(let n=0;n<w.mag;n++){const result=f.arena.shoot(f.a.id,dir(0,-.35,-8));assert.equal(result.accepted,true);assert.equal(f.arena.projectiles.at(-1).kind,'bolt');f.advance(500)}assert.equal(f.a.ammo,0);assert.equal(f.arena.shoot(f.a.id,[0,0,-1]).accepted,false);assert.equal(f.arena.reload(f.a.id),true);f.advance(w.reload*1000+1);assert.equal(f.a.ammo,w.mag);assert.equal(f.a.reserve,w.reserve-w.mag);assert.ok(f.b.health<200)}
+});

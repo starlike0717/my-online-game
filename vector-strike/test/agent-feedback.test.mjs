@@ -2,10 +2,11 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
 import {readFile} from 'node:fs/promises';
+import {agentActionPose} from '../dist/animation.js';
 import * as THREE from '../dist/vendor/three.module.js';
 const source=await readFile(new URL('../dist/game.js',import.meta.url),'utf8');
 function body(name){const a=source.indexOf('function '+name+'('),b=source.indexOf('\nfunction ',a+1);return source.slice(a,b)}
-function fixture(){const c=vm.createContext({THREE,matCache:new Map(),dyingAgents:[],worldGroup:new THREE.Group()});new vm.Script(['mat','box','cylinder','makeAgent','flashAgent','fireAgent','animateAgent','retireAgent','updateDyingAgents'].map(body).join('\n')).runInContext(c);return c}
+function fixture(){const c=vm.createContext({THREE,agentActionPose,matCache:new Map(),dyingAgents:[],worldGroup:new THREE.Group()});new vm.Script(['restTransform','applyModelPose','mat','box','cylinder','makeAgent','flashAgent','fireAgent','animateAgent','retireAgent','updateDyingAgents'].map(body).join('\n')).runInContext(c);return c}
 test('a hit tints only that agent red, then restores its original materials',()=>{
  const c=fixture(),a=c.makeAgent(),b=c.makeAgent(),mat=a.userData.torso.material,other=b.userData.torso.material,original=mat.color.getHex();assert.notEqual(mat,other);c.flashAgent(a);assert.notEqual(mat.color.getHex(),original);assert.ok(mat.color.r>mat.color.g*2);assert.equal(other.color.getHex(),original);c.animateAgent(a,.3);assert.equal(mat.color.getHex(),original);assert.equal(mat.emissiveIntensity,a.userData.hitMaterials.find(m=>m.material===mat).intensity);
 });

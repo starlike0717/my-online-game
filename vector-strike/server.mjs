@@ -1,3 +1,4 @@
+import {readAdminConfig,bootstrapAdmin} from './server/admin.mjs';
 import {normalizeEconomy,publicEconomy,purchase,credit,waveReward,winReward} from './dist/economy.js';
 import http from 'node:http';
 import {EventEmitter} from 'node:events';
@@ -26,9 +27,10 @@ let writeQueue=Promise.resolve(),authInFlight=0;
 await mkdir(dataDir,{recursive:true,mode:0o700});
 try{const data=JSON.parse(await readFile(dataFile,'utf8'));for(const u of data.users||[]){u.progress=normalizeProgress(u.progress);users.set(u.username,u)}for(const g of data.guests||[]){g.progress=normalizeProgress(g.progress);guests.set(g.hash,g)}for(const s of data.sessions||[])if(s.expires>Date.now())sessions.set(s.hash,s)}catch(error){if(error.code!=='ENOENT')throw new Error('계정 데이터를 읽을 수 없습니다. 기존 데이터 파일을 확인하세요.',{cause:error})}
 function persist(){const text=JSON.stringify({users:[...users.values()],sessions:[...sessions.values()],guests:[...guests.values()]});const next=writeQueue.catch(()=>{}).then(async()=>{await writeFile(dataFile+'.tmp',text,{mode:0o600});await rename(dataFile+'.tmp',dataFile)});writeQueue=next;return next}
+const adminConfig=readAdminConfig();if(bootstrapAdmin(users,adminConfig,normalizeProgress()))await persist();
 function tokenFrom(req){const auth=req.headers.authorization;return typeof auth==='string'&&auth.startsWith('Bearer ')?auth.slice(7):''}
 function sessionUser(token){if(typeof token!=='string'||token.length>128)return null;const session=sessions.get(hashToken(token));return session&&session.expires>Date.now()?users.get(session.username)||null:null}
-function publicUser(u){return {username:u.username,createdAt:u.createdAt,records:u.records||[],progress:publicProgress(u.progress),economy:publicEconomy(u.economy)}}
+function publicUser(u){return {username:u.username,role:u.role==='admin'&&u.username===adminConfig?.username?'admin':'player',createdAt:u.createdAt,records:u.records||[],progress:publicProgress(u.progress),economy:publicEconomy(u.economy)}}
 function guestFor(token){return typeof token==='string'&&token.length<=128?guests.get(hashToken(token))||null:null}
 function identityFor(m){const user=sessionUser(m.token||'');if(user)return {key:'u:'+user.username,holder:user,name:user.username};const guest=guestFor(m.guestToken||'');return guest?{key:'g:'+guest.hash,holder:guest,name:String(m.name||guest.name||'GUEST').replace(/[<>\x00-\x1f]/g,'').trim().slice(0,20)||'GUEST'}:null}
 function holderFor(key){return key?.startsWith('u:')?users.get(key.slice(2)):key?.startsWith('g:')?guests.get(key.slice(2)):null}
@@ -45,7 +47,7 @@ const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost'),route=url.pathname,ip=ipOf(req);
     if(route.startsWith('/api/')){
       if(!limit('api:'+ip,240,60000))return json(res,429,{error:'요청이 많습니다. 잠시 후 다시 시도하세요.'});
-      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,meleeAbilities:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
+      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,meleeAbilities:true,sidearmMobility:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
       if(route==='/api/guest'&&req.method==='POST'){
         const data=await body(req);let guest=guestFor(data.guestToken),guestToken=data.guestToken;
         if(!guest){guestToken=randomBytes(32).toString('base64url');const hash=hashToken(guestToken);guest={hash,id:randomBytes(12).toString('hex'),name:'GUEST',createdAt:Date.now(),progress:normalizeProgress(),records:[]};guests.set(hash,guest);await persist()}
@@ -67,13 +69,13 @@ const server=http.createServer(async(req,res)=>{
       if((route==='/api/register'||route==='/api/login')&&req.method==='POST'){
         if(!limit('auth:'+ip,15,15*60000)||authInFlight>=8)return json(res,429,{error:'로그인 시도가 많습니다. 15분 후 다시 시도하세요.'});
         const data=await body(req),username=String(data.username||'').toLowerCase().trim(),password=data.password;
-        if(!/^[a-z0-9_]{3,20}$/.test(username)||typeof password!=='string'||password.length<8||password.length>128)return json(res,400,{error:'아이디는 영문·숫자·밑줄 3~20자, 비밀번호는 8~128자로 입력하세요.'});
+        if(!/^[a-z0-9_가-힣]{2,20}$/u.test(username)||typeof password!=='string'||password.length<8||password.length>128)return json(res,400,{error:'아이디는 한글·영문·숫자·밑줄 2~20자, 비밀번호는 8~128자로 입력하세요.'});
         authInFlight++;let u;try{
           if(route==='/api/register'){
             if(users.has(username))return json(res,409,{error:'이미 사용 중인 아이디입니다.'});
             const salt=randomBytes(16).toString('hex'),passwordHash=(await derive(password,salt,64)).toString('hex');
             if(users.has(username))return json(res,409,{error:'이미 사용 중인 아이디입니다.'});
-            u={username,salt,passwordHash,createdAt:Date.now(),records:[],progress:normalizeProgress()};users.set(username,u);
+            u={username,salt,passwordHash,role:'player',createdAt:Date.now(),records:[],progress:normalizeProgress()};users.set(username,u);
           }else{
             u=users.get(username);const salt=u?.salt||'00000000000000000000000000000000';const actual=await derive(password,salt,64),expected=u?Buffer.from(u.passwordHash,'hex'):Buffer.alloc(64);if(!u||!timingSafeEqual(actual,expected))return json(res,401,{error:'아이디 또는 비밀번호를 확인하세요.'});
           }
@@ -81,6 +83,7 @@ const server=http.createServer(async(req,res)=>{
         }finally{authInFlight--}
       }
       const u=sessionUser(tokenFrom(req));
+      if(route==='/api/admin/status'&&req.method==='GET')return u?.role==='admin'&&u.username===adminConfig?.username?json(res,200,{ok:true,role:'admin',players:[...rooms.values()].reduce((n,r)=>n+r.players.size,0),rooms:rooms.size,queued:matchmaker.count,accounts:users.size}):json(res,403,{error:'관리자 권한이 필요합니다.'});
       if(route==='/api/me'&&req.method==='GET')return u?json(res,200,{user:publicUser(u)}):json(res,401,{error:'로그인이 필요합니다.'});
       if(route==='/api/logout'&&req.method==='POST'){sessions.delete(hashToken(tokenFrom(req)));await persist();return json(res,200,{ok:true})}
       if(route==='/api/records'&&req.method==='POST'){
@@ -147,6 +150,7 @@ wss.on('connection',(ws,req)=>{
     if(m.type==='ping')return send(ws,{type:'pong',time:m.time});
     if(!ws.room||!ws.playerId)return;
     if(m.type==='move'){if(!ws.room.move(ws.playerId,m)){const p=ws.room.players.get(ws.playerId);if(p&&p.health>0&&ws.room.phase!=='finished')send(ws,{type:'correct',x:p.x,y:p.y,z:p.z})}}
+    if(m.type==='dash'){const accepted=ws.room.dash(ws.playerId,{right:m.right,forward:m.forward}),p=ws.room.players.get(ws.playerId);if(p)send(ws,{type:'dashAck',seq:m.seq,accepted,until:p.dashUntil,readyAt:p.dashReadyAt,speed:p.dashSpeed,direction:p.dashDirection||[0,0],x:p.x,y:p.y,z:p.z,serverTime:Date.now()})}
     if(m.type==='shoot'){const result=ws.room.shoot(ws.playerId,m.dir,{aim:m.aim===true});acknowledgeLoadout(ws,'shotAck',m,result.accepted)}
     if(m.type==='draw')ws.room.draw(ws.playerId,m.active!==false);
     if(m.type==='reload'){const accepted=ws.room.reload(ws.playerId);acknowledgeLoadout(ws,'reloadAck',m,accepted)}

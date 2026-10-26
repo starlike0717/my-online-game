@@ -88,3 +88,22 @@ const meleeTraits=[
  {kind:'ammo',title:'보급품 해체',ammoFraction:.3,cooldown:9,backMultiplier:1.7}
 ];
 weapons.filter(w=>w.mechanic==='melee').forEach((w,i)=>{w.perk=meleeTraits[i];w.backMultiplier=w.perk.backMultiplier;w.backstab=w.perk.backstab===true;w.extraJumps=w.perk.extraJumps||0});
+
+// Sidearm mobility stays tied to the equipped weapon; existing IDs and prices stay stable.
+const sidearmMobility=[
+ {title:'전술 대시',dash:{speed:20,duration:.18,cooldown:4.5}},
+ {title:'리젠트 에어 스텝',extraJumps:1},
+ {title:'스팅어 대시',dash:{speed:22,duration:.18,cooldown:5}},
+ {title:'레인저 에어 스텝',extraJumps:1},
+ {title:'클래식 돌진',dash:{speed:21,duration:.2,cooldown:5}},
+ {title:'피스메이커 에어 스텝',extraJumps:1},
+ {title:'니들 기동술',extraJumps:1,dash:{speed:22,duration:.2,cooldown:5.5}},
+ {title:'에이스 기동술',extraJumps:1,dash:{speed:20,duration:.2,cooldown:5}}
+];
+weapons.filter(w=>w.cat==='hg').forEach((w,i)=>{w.mobility=sidearmMobility[i];w.extraJumps=w.mobility.extraJumps||0;w.dash=w.mobility.dash});
+
+categories.push({id:'crossbow',name:'석궁',en:'CROSSBOW'});
+weapons.push(
+ {...weapons[50],id:73,name:'XB-1 ARBALEST',ko:'컴파운드 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:82,headMultiplier:1.9,rate:1.05,mag:1,reserve:18,reload:1.45,speed:1.05,projectileSpeed:88,gravity:2.2,rangeStart:35,rangeEnd:100,minDamage:.75,color:0x91a89c},
+ {...weapons[50],id:74,name:'XB-4 REPEATER',ko:'연발 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:48,headMultiplier:1.7,rate:2.2,mag:4,reserve:28,reload:2.1,speed:1,projectileSpeed:74,gravity:2.8,rangeStart:25,rangeEnd:85,minDamage:.7,color:0x9a967d}
+);

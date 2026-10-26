@@ -27,7 +27,7 @@ test('reaching the viewport edge keeps rotation going and re-entry does not snap
 
 function cursorFixture(request){
  const classes=new Set(),elements=new Map(),events=new EventTarget(),document={pointerLockElement:null,addEventListener:events.addEventListener.bind(events),removeEventListener:events.removeEventListener.bind(events),body:{classList:{toggle(name,enabled){if(enabled)classes.add(name);else classes.delete(name)}}},exitPointerLock(){this.pointerLockElement=null}};const canvas={requestPointerLock(){return request?.(document,canvas)}};
- const c=vm.createContext({document,combat:true,paused:false,state:'playing',isTouch:false,pointerFallback:false,pointerLockPending:false,pointerHintShown:false,mouse:{down:false,position:null},keys:new Set(),aim:false,shotCooldown:0,cancelDraw(){},toast(){},requestMouseLock,resetMouseLook,$:(id)=>{if(id==='world')return canvas;if(!elements.has(id))elements.set(id,{hidden:false});return elements.get(id)}});
+ const c=vm.createContext({document,combat:true,paused:false,state:'playing',isTouch:false,pointerFallback:false,pointerLockPending:false,pointerHintShown:false,mouse:{down:false,position:null},keys:new Set(),aim:false,shotCooldown:0,cancelDraw(){},toast(){},syncAudioScene(){},requestMouseLock,resetMouseLook,$:(id)=>{if(id==='world')return canvas;if(!elements.has(id))elements.set(id,{hidden:false});return elements.get(id)}});
  new vm.Script(['syncMouseMode','enablePointerFallback','handlePointerLockChange','lockPointer','pause','resume'].map(body).join('\n')).runInContext(c);return{c,classes,document,canvas};
 }
 test('gameplay hides the cursor while Escape pause restores menus and pointer-lock exit keeps combat active',async()=>{
