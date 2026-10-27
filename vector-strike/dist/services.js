@@ -68,13 +68,13 @@ class Network extends EventTarget{
  emit(type,detail){this.dispatchEvent(new CustomEvent(type,{detail}))}
  send(data){if(this.socket?.connected&&(this.socket.io.engine?.writeBuffer.length||0)<64)this.socket.emit('packet',data)}
  leave(){const old=this.socket,abort=this.abortJoin;this.abortJoin=null;this.socket=null;this.connected=false;this.queued=false;this.connecting=false;this.id='';this.players.clear();this.match=null;clearInterval(this.pingTimer);clearInterval(queueTimer);old?.disconnect();if(abort)abort();$('onlineHud').hidden=true;$('onlineScoreboard').hidden=true;document.body.classList.remove('online-game');renderMode()}
- async join({name,room,map,weapon,kind,teamSize}){
+ async join({name,room,map,weapon,kind,teamSize,skinId}){
   this.leave();if(!backend)throw new Error('온라인 서버 주소를 먼저 입력하세요.');const ws=io(backend,{autoConnect:false,forceNew:true,reconnection:false,transports:['websocket','polling'],tryAllTransports:true,timeout:10000});this.socket=ws;this.connecting=true;renderMode();
   return new Promise((resolve,reject)=>{
    let settled=false;const timer=setTimeout(()=>fail(new Error('온라인 연결 시간이 초과되었습니다. 서버 주소를 확인하세요.')),12000);
    const fail=error=>{if(settled)return;settled=true;clearTimeout(timer);this.abortJoin=null;this.leave();reject(error)};
    this.abortJoin=()=>{if(settled)return;settled=true;clearTimeout(timer);const error=new Error('매칭을 취소했습니다.');error.name='AbortError';reject(error)};
-   ws.on('connect',()=>{if(ws!==this.socket)return;this.send({type:kind==='bot'?'queueBots':kind==='public'?'queue':'join',protocol:3,name,room,map,weapon,teamSize,token,guestToken});this.pingTimer=setInterval(()=>this.send({type:'ping',time:Date.now()}),2000)});
+   ws.on('connect',()=>{if(ws!==this.socket)return;this.send({type:kind==='bot'?'queueBots':kind==='public'?'queue':'join',protocol:3,name,room,map,weapon,teamSize,skinId,token,guestToken});this.pingTimer=setInterval(()=>this.send({type:'ping',time:Date.now()}),2000)});
    ws.on('packet',message=>{
     if(ws!==this.socket||!message||typeof message!=='object')return;
     if(message.type==='error'){if(!settled)fail(new Error(message.error));else hooks.toast?.(message.error);return}
@@ -105,7 +105,7 @@ export const services={
  beginWaves(){waveRunPromise=(async()=>{if(backend&&!ready)await checkServer();if(ready)return {...await request('POST','/api/wave/start',{}),local:false};return {runId:crypto.randomUUID(),local:true}})().catch(()=>({runId:crypto.randomUUID(),local:true}));return waveRunPromise},
  async rewardWave(wave,kills){const run=await waveRunPromise;if(!run)return 0;if(run.local){const reward=credit(currentEconomy,'wave:'+run.runId+':'+wave,waveReward(wave));updateEconomy(reward.economy);return reward.amount}const result=await request('POST','/api/wave/reward',{runId:run.runId,wave,kills});updateEconomy(result.economy);return result.amount},
  openOnline(options={}){matchKind=options.kind||'code';if([1,2,3,4].includes(options.teamSize))teamSize=options.teamSize;$('onlineOverlay').hidden=false;$('onlineError').textContent='';$('onlineRoom').value='';$('serverUrlInput').value=backend;if(!backend||!ready)$('serverDetails').open=true;renderMode();checkServer()},
- async queueFromHub(size,isCurrent){if(![1,2,3].includes(size))throw new Error('지원하지 않는 듀얼입니다.');if(!await checkServer())throw new Error('온라인 서버에 연결할 수 없습니다. 잠시 후 패드에 다시 올라가세요.');if(!isCurrent())return;const name=$('onlineName').value.trim()||'GUEST';const welcome=await net.join({name,room:'',map:hooks.getMap(),weapon:hooks.getWeapon(),kind:'public',teamSize:size});if(isCurrent())hooks.onOnline(welcome);else net.leave()},
+ async queueFromHub(size,isCurrent){if(![1,2,3].includes(size))throw new Error('지원하지 않는 듀얼입니다.');if(!await checkServer())throw new Error('온라인 서버에 연결할 수 없습니다. 잠시 후 패드에 다시 올라가세요.');if(!isCurrent())return;const name=$('onlineName').value.trim()||'GUEST';const welcome=await net.join({name,room:'',map:hooks.getMap(),weapon:hooks.getWeapon(),skinId:hooks.getSkin?.()??0,kind:'public',teamSize:size});if(isCurrent())hooks.onOnline(welcome);else net.leave()},
  rematch(kind,size){this.openOnline({kind,teamSize:size});$('onlineForm').requestSubmit()},
  async saveRecord(record){if(!account||record.mode==='online')return;try{await request('POST','/api/records',record)}catch{hooks.toast?.('기록은 이 브라우저에 보관되었습니다. 서버 연결을 확인해 주세요.')}},
  async refreshProfile(){if(ready)try{await refreshIdentity()}catch{}},
@@ -122,7 +122,7 @@ export const services={
   $('logoutBtn').onclick=async()=>{try{await request('POST','/api/logout',{})}catch{}token='';rememberToken();account=null;updateAccount();hooks.onAccount?.(null);$('authOverlay').hidden=true;await refreshIdentity().catch(()=>{});hooks.toast?.('게스트 플레이로 전환했습니다.')};
   $('onlineForm').onsubmit=async event=>{
    event.preventDefault();$('onlineJoinBtn').disabled=true;$('onlineError').textContent='';
-   try{changeServer($('serverUrlInput').value.trim()||backend);if(!await checkServer())throw new Error($('onlineServerStatus').textContent);hooks.initAudio?.();const name=$('onlineName').value.trim();set('nickname',name);const welcome=await net.join({name,room:matchKind==='code'?$('onlineRoom').value.trim().toUpperCase():'',map:hooks.getMap(),weapon:hooks.getWeapon(),kind:matchKind,teamSize});$('onlineOverlay').hidden=true;hooks.onOnline(welcome)}catch(error){if(error.name!=='AbortError')$('onlineError').textContent=error.message}finally{$('onlineJoinBtn').disabled=false;renderMode()}
+   try{changeServer($('serverUrlInput').value.trim()||backend);if(!await checkServer())throw new Error($('onlineServerStatus').textContent);hooks.initAudio?.();const name=$('onlineName').value.trim();set('nickname',name);const welcome=await net.join({name,room:matchKind==='code'?$('onlineRoom').value.trim().toUpperCase():'',map:hooks.getMap(),weapon:hooks.getWeapon(),skinId:hooks.getSkin?.()??0,kind:matchKind,teamSize});$('onlineOverlay').hidden=true;hooks.onOnline(welcome)}catch(error){if(error.name!=='AbortError')$('onlineError').textContent=error.message}finally{$('onlineJoinBtn').disabled=false;renderMode()}
   };
   $('copyRoomHud').onclick=async()=>{try{await navigator.clipboard.writeText(net.room);hooks.toast?.('방 코드를 복사했습니다: '+net.room)}catch{hooks.toast?.('방 코드: '+net.room)}};
   window.addEventListener('keydown',event=>{if(event.code==='Escape'&&!$('onlineOverlay').hidden&&!net.connected){net.leave();$('onlineOverlay').hidden=true}if(net.connected&&event.code==='Tab'){event.preventDefault();$('onlineScoreboard').hidden=false}});

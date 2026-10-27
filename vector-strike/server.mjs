@@ -1,3 +1,4 @@
+import {agentSkins,normalizeSkinId} from './dist/agent-skins.js';
 import {readAdminConfig,bootstrapAdmin} from './server/admin.mjs';
 import {normalizeEconomy,publicEconomy,purchase,credit,waveReward,winReward} from './dist/economy.js';
 import http from 'node:http';
@@ -48,7 +49,7 @@ const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost'),route=url.pathname,ip=ipOf(req);
     if(route.startsWith('/api/')){
       if(!limit('api:'+ip,240,60000))return json(res,429,{error:'요청이 많습니다. 잠시 후 다시 시도하세요.'});
-      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,mapCount:maps.length,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,meleeAbilities:true,sidearmMobility:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
+      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,mapCount:maps.length,skinCount:agentSkins.length,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,meleeAbilities:true,sidearmMobility:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
       if(route==='/api/guest'&&req.method==='POST'){
         const data=await body(req);let guest=guestFor(data.guestToken),guestToken=data.guestToken;
         if(!guest){guestToken=randomBytes(32).toString('base64url');const hash=hashToken(guestToken);guest={hash,id:randomBytes(12).toString('hex'),name:'GUEST',createdAt:Date.now(),progress:normalizeProgress(),records:[]};guests.set(hash,guest);await persist()}
@@ -116,8 +117,8 @@ function send(ws,data){if(ws.readyState===WebSocket.OPEN&&ws.bufferedAmount<1280
 function acknowledgeLoadout(ws,type,request,accepted){const p=ws.room.players.get(ws.playerId);if(!p)return;send(ws,{type,seq:request.seq,requested:request.weapon,accepted,weapon:p.weapon,ammo:p.ammo,reserve:p.reserve,reloadAt:p.reloadAt,readyAt:p.readyAt,health:p.health,serverTime:Date.now()})}
 function broadcast(room,data){for(const ws of peers)if(ws.room===room)send(ws,data)}
 function createRoom(map,teamSize,kind){if(rooms.size>=100)throw new Error('서버의 경기 방이 가득 찼습니다. 잠시 후 다시 시도하세요.');let code;do{code=randomBytes(3).toString('hex').toUpperCase()}while(rooms.has(code));const room=new Arena(code,map,Date.now,{teamSize,kind});rooms.set(code,room);return room}
-function identify(ws,m){if(m.protocol!==3)throw new Error('게임이 업데이트되었습니다. 페이지를 새로고침하고 다시 참가하세요.');const identity=identityFor(m);if(!identity)throw new Error('게스트 정보를 연결한 뒤 다시 시도하세요.');const other=activeIdentities.get(identity.key);if(other&&other!==ws&&other.readyState===WebSocket.OPEN)throw new Error('이 플레이어는 다른 탭에서 대기하거나 경기 중입니다. 먼저 기존 경기를 종료하세요.');ws.identity=identity;activeIdentities.set(identity.key,ws);return identity}
-function attach(ws,room,weapon){const identity=ws.identity,profile=publicProgress(identity.holder.progress);if(!normalizeEconomy(identity.holder.economy).owned.includes(weapon))throw new Error('구매한 무기만 장착할 수 있습니다.');const p=room.join(identity.name,weapon,{profileKey:identity.key,level:profile.level,rating:profile.rating});ws.room=room;ws.playerId=p.id;ws.queueEntry=null;clearTimeout(ws.joinTimeout);const snapshot=room.snapshot();send(ws,{type:'welcome',id:p.id,room:room.code,map:room.map,self:snapshot.players.find(v=>v.id===p.id),snapshot});broadcast(room,{type:'joined',name:p.name,count:room.players.size});}
+function identify(ws,m){if(m.protocol!==3)throw new Error('게임이 업데이트되었습니다. 페이지를 새로고침하고 다시 참가하세요.');const identity=identityFor(m);if(!identity)throw new Error('게스트 정보를 연결한 뒤 다시 시도하세요.');const other=activeIdentities.get(identity.key);if(other&&other!==ws&&other.readyState===WebSocket.OPEN)throw new Error('이 플레이어는 다른 탭에서 대기하거나 경기 중입니다. 먼저 기존 경기를 종료하세요.');ws.identity=identity;ws.skinId=normalizeSkinId(m.skinId);activeIdentities.set(identity.key,ws);return identity}
+function attach(ws,room,weapon){const identity=ws.identity,profile=publicProgress(identity.holder.progress);if(!normalizeEconomy(identity.holder.economy).owned.includes(weapon))throw new Error('구매한 무기만 장착할 수 있습니다.');const p=room.join(identity.name,weapon,{profileKey:identity.key,level:profile.level,rating:profile.rating,skinId:ws.skinId});ws.room=room;ws.playerId=p.id;ws.queueEntry=null;clearTimeout(ws.joinTimeout);const snapshot=room.snapshot();send(ws,{type:'welcome',id:p.id,room:room.code,map:room.map,self:snapshot.players.find(v=>v.id===p.id),snapshot});broadcast(room,{type:'joined',name:p.name,count:room.players.size});}
 function cancelQueue(ws){if(ws.queueEntry){matchmaker.cancel(ws.queueEntry.key);ws.queueEntry=null}if(ws.identity&&!ws.room&&activeIdentities.get(ws.identity.key)===ws)activeIdentities.delete(ws.identity.key)}
 function finalise(room){
   if(room.phase!=='finished'||room.resultApplied)return;room.resultApplied=true;
@@ -149,7 +150,7 @@ wss.on('connection',(ws,req)=>{
         if(m.type==='queueBots'){const room=createRoom(Math.floor(Math.random()*maps.length),m.teamSize,'bot');attach(ws,room,Number(m.weapon)||0);room.fillWithBots();return}
         if(m.type==='queue'){const profile=publicProgress(identity.holder.progress);ws.queueEntry=matchmaker.enqueue({key:identity.key,ws,weapon:Number(m.weapon)||0,teamSize:m.teamSize,level:profile.level,rating:profile.rating});clearTimeout(ws.joinTimeout);send(ws,matchmaker.status(ws.queueEntry));matchQueued();return}
         const code=typeof m.room==='string'?m.room.trim().toUpperCase():'';if(code&&!/^[A-Z0-9]{4,8}$/.test(code))throw new Error('방 코드는 영문·숫자 4~8자입니다.');
-        const room=code?rooms.get(code):createRoom(clamp(Number(m.map)||0,0,maps.length-1),m.teamSize,'code');if(!room)throw new Error('방을 찾을 수 없습니다. 코드를 확인하세요.');attach(ws,room,Number(m.weapon)||0);
+        const room=code?rooms.get(code):createRoom(Math.max(0,Math.min(maps.length-1,Number(m.map)||0)),m.teamSize,'code');if(!room)throw new Error('방을 찾을 수 없습니다. 코드를 확인하세요.');attach(ws,room,Number(m.weapon)||0);
       }catch(error){if(ws.identity&&!ws.room&&!ws.queueEntry&&activeIdentities.get(ws.identity.key)===ws)activeIdentities.delete(ws.identity.key);send(ws,{type:'error',error:error.message})}return;
     }
     if(m.type==='ping')return send(ws,{type:'pong',time:m.time});

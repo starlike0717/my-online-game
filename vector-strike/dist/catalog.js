@@ -21,7 +21,7 @@ const handling={ar:[.2,13,.055],smg:[.14,17,.038],sg:[.23,10,.105],sr:[.32,8,.13
 const reserves={ar:[150,140,160,180,125,120,162,150,180,150],smg:[192,168,200,150,180,240,224,180,156,180],sg:[40,36,60,48,56,48,60,30],sr:[25,20,50,30,40,25,48,30],lmg:[200,225,240,300,180,240],hg:[90,42,120,75,56,36,100,85]};
 export const weapons=[];
 for(const [cat,g]of Object.entries(groups))g.names.forEach((name,i)=>{
- name=({ar:'돌격소총',smg:'기관단총',sg:'산탄총',sr:'저격소총',lmg:'경기관총',hg:'권총'}[cat]||name)+' '+String(i+1).padStart(2,'0');
+ name=({ar:'돌격소총',smg:'기관단총',sg:'산탄총',sr:'저격소총',lmg:'경기관총',hg:'권총'}[cat]||name);
  const [damage,headMultiplier,rate,mag]=profiles[cat][i],range=ranges[cat],feel=handling[cat];
  const auto=['ar','smg','lmg'].includes(cat)||(cat==='sg'&&(i===2||i===6))||(cat==='hg'&&i===2);
  weapons.push({...g,id:weapons.length,name,cat,damage,headMultiplier,rate,mag,auto,reserve:reserves[cat][i],
@@ -101,7 +101,7 @@ const activeMeleeAbilities=[
  {kind:'reload',title:'보급품 강탈',cooldown:16,fraction:.4}, {kind:'backstab',title:'급소 노리기',cooldown:9},
  {kind:'skyDash',title:'돌파 상승',cooldown:8}, {kind:'tripleJump',title:'3단 도약',cooldown:11}
 ];
-weapons.filter(w=>w.mechanic==='melee').forEach((w,i)=>{w.name='근접무기 '+String(i+1).padStart(2,'0');w.perk=meleeTraits[i];w.ability=activeMeleeAbilities[i];w.backMultiplier=w.perk.backMultiplier;w.backstab=w.perk.backstab===true;w.extraJumps=w.perk.extraJumps||0});
+weapons.filter(w=>w.mechanic==='melee').forEach((w,i)=>{w.name=w.ko;w.perk=meleeTraits[i];w.ability=activeMeleeAbilities[i];w.backMultiplier=w.perk.backMultiplier;w.backstab=w.perk.backstab===true;w.extraJumps=w.perk.extraJumps||0});
 
 // Sidearms no longer grant dash; a few keep a passive air-step identity.
 const sidearmMobility=[
@@ -118,6 +118,6 @@ weapons.filter(w=>w.cat==='hg').forEach((w,i)=>{w.mobility=sidearmMobility[i];w.
 
 categories.push({id:'crossbow',name:'석궁',en:'CROSSBOW'});
 weapons.push(
- {...weapons[50],id:73,name:'석궁 01',ko:'컴파운드 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:82,headMultiplier:1.9,rate:1.05,mag:1,reserve:18,reload:1.45,speed:1.05,projectileSpeed:88,gravity:2.2,rangeStart:35,rangeEnd:100,minDamage:.75,color:0x91a89c},
+ {...weapons[50],id:73,name:'석궁',ko:'컴파운드 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:82,headMultiplier:1.9,rate:1.05,mag:1,reserve:18,reload:1.45,speed:1.05,projectileSpeed:88,gravity:2.2,rangeStart:35,rangeEnd:100,minDamage:.75,color:0x91a89c},
  {...weapons[50],id:74,name:'연발 석궁',ko:'연발 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:48,headMultiplier:1.7,rate:2.2,mag:4,reserve:28,reload:2.1,speed:1,projectileSpeed:74,gravity:2.8,rangeStart:25,rangeEnd:85,minDamage:.7,color:0x9a967d}
 );

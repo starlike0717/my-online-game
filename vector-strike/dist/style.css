@@ -48,3 +48,7 @@ body.mouse-look,body.mouse-look *{cursor:none!important}#crosshair{--turn:0deg;t
 .touch-actions button.active,#touchAim.active{background:#d3f878b0;color:#19250e;box-shadow:0 0 0 3px #d3f87844,0 0 20px #d3f87870}
 
 .touch-actions #touchMeleeAbility{border-color:#d3f878;color:#e8ffbd;background:#202b1fce}
+
+.quick-actions{flex-wrap:wrap}
+.skin-panel{width:min(940px,94vw);max-height:92svh;overflow:auto;background:#17211e;border:1px solid #d3f87850;padding:28px;box-sizing:border-box}.skin-heading{display:flex;align-items:center;justify-content:space-between;gap:20px}.skin-heading h2{font-size:28px;margin:7px 0}.skin-panel p{color:#b2c1b5;line-height:1.6}.skin-grid{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:12px}.skin-card{display:flex;flex-direction:column;text-align:left;padding:0 0 12px;border:1px solid #ffffff20;background:#22302a;overflow:hidden}.skin-card img{width:100%;height:auto;aspect-ratio:8/9;object-fit:cover}.skin-card strong{padding:10px 12px 5px;font-size:15px}.skin-card span{padding:0 12px;color:#b2bfb3;font-size:11px}.skin-card.selected{border-color:var(--lime);box-shadow:inset 0 0 0 1px var(--lime)}.skin-card.selected span{color:var(--lime)}.skin-note{font-size:12px}.skin-card:hover{background:#354733}.skin-heading .secondary{min-width:85px}#skinOpen span{max-width:none;font-size:11px;letter-spacing:0}
+@media(max-width:700px){.skin-panel{padding:18px}.skin-grid{grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.skin-heading h2{font-size:23px}.skin-card img{max-height:210px;object-fit:contain}}
