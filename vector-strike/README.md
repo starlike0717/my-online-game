@@ -163,3 +163,6 @@ Blender 4.5 LTS에서 제작한 장전·앉기·슬라이드·사격·피격 키
 Mobile controls support an editable shared jump/slide button: tap to jump, or hold while moving to slide. The aim button gently assists toward visible opponents; when it is released, a weapon fires after an opponent stays exactly under the crosshair briefly. Both assist options can be changed in Settings. Double-tap or double-click the lobby robot to enter the hidden Vector Atrium, where fixed bots and bullseye targets respawn after three seconds and duel pads join public 1v1, 2v2, or 3v3 matchmaking. Walk through the EXIT arch to return to the lobby.
 
 The ten arenas include High Citadel, Skyline rooftops, Red Mesa, Iron Foundry, Green Canopy, and Spring Yard. Several maps have climbable high-ground routes; Spring Yard trampoline pads launch players upward. A generated armor tile is applied to player and rival robot meshes, and is embedded in the standalone HTML build.
+
+### 걸어서 들어가는 훈련장
+로봇의 비밀 공간에 입장한 뒤 초록색 **봇 훈련장** 문 또는 빨간색 **표적 사격장** 문 안으로 걸어 들어가세요. 봇 훈련장은 색깔별 고정 봇 15기와 거리별 단상, 표적 사격장은 높이·거리가 다른 공중 원형 표적 9개를 갖춥니다. 봇·표적은 체력 100이며 처치 후 3초 뒤 원래 위치에 복원됩니다. 각 훈련장 뒤쪽 **로비로 돌아가기** 문을 걸어 통과하면 3D 로비로 돌아갑니다. 이동 시 체력과 탄약을 보충하며, 듀얼 패드는 3D 로비 오른쪽에 있습니다.

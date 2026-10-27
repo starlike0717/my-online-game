@@ -34,7 +34,7 @@ export function rayActor(origin,dir,actor){
  const dx=origin[0]-actor.x,dz=origin[2]-actor.z;
  const o=[c*dx-s*dz,(origin[1]-actor.y)/scale,s*dx+c*dz];
  const d=[c*dir[0]-s*dir[2],dir[1]/scale,s*dir[0]+c*dir[2]];
- if(actor.targetKind==='bullseye'){const distance=rayBox(o,d,{min:[-.7,.7,-.09],max:[.7,2.2,.09]});const x=o[0]+d[0]*distance,y=o[1]+d[1]*distance;return{distance,head:Number.isFinite(distance)&&Math.hypot(x,y-1.45)<.17}}
+ if(actor.targetKind==='bullseye'){const round=actor.targetShape==='round',distance=rayBox(o,d,{min:[round?-.68:-.7,round?.77:.7,-.09],max:[round?.68:.7,round?2.13:2.2,.09]});const x=o[0]+d[0]*distance,y=o[1]+d[1]*distance,radius=Math.hypot(x,y-1.45);if(round&&!(radius<=.68))return{distance:Infinity,head:false};return{distance,head:Number.isFinite(distance)&&radius<.17}}
  const hd=rayBox(o,d,{min:[-.29,1.75,-.27],max:[.29,2.22,.28]});
  // Torso, hips/legs, and shoulders. The carried weapon is not part of the body.
  const bd=Math.min(...[
