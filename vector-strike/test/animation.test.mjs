@@ -71,19 +71,19 @@ test('agent motion has distinct walking, crouching, sliding, firing, hit, and me
  assert.ok(walk.legs[0].rotation[0]>0&&walk.legs[1].rotation[0]<0);
  assert.ok(crouch.legs[0].knee>.6);assert.ok(crouch.torsoRotation[0]>0);
  assert.ok(slide.legs.every(leg=>leg.rotation[0]<-.9));assert.ok(slide.torsoRotation[0]<0);
- const shot=agentActionPose({shootTime:.18}),hit=agentActionPose({hitTime:.22}),strike=agentActionPose({attackProgress:.4});
+ const shot=agentActionPose({shootTime:.16}),hit=agentActionPose({hitTime:.20}),strike=agentActionPose({attackProgress:.4});
  assert.ok(shot.gunPosition[2]<0);assert.ok(shot.arms[0].rotation[0]<0);
  assert.ok(hit.torsoRotation[0]<0);assert.ok(hit.headPosition[1]<0);assert.ok(strike.arms[1].rotation[0]>.4);
  for(const n of numericLeaves(rest))close(n);
 });
 
-test('agent timer recovery is monotonic, frame-rate independent, finite, and leaves physics untouched',()=>{
+test('agent hit/fire clips ease into impact then recover independently of frame rate without changing physics',()=>{
  let lastShoot=Infinity,lastHit=Infinity;
  for(let i=0;i<=100;i++){
   const state={phase:i/10,moveSpeed:8,shootTime:.18*(1-i/100),hitTime:.22*(1-i/100),crouched:.3,sliding:.2,airborne:.1,pitch:.4};
   const copy=structuredClone(state),a=agentActionPose(state),b=agentActionPose(state);
   assert.deepEqual(a,b);assert.deepEqual(state,copy);assert.ok(numericLeaves(a).every(Number.isFinite));
-  assert.ok(a.shoot<=lastShoot+1e-10);assert.ok(a.hit<=lastHit+1e-10);lastShoot=a.shoot;lastHit=a.hit;
+  if(i>=20){assert.ok(a.shoot<=lastShoot+1e-10);assert.ok(a.hit<=lastHit+1e-10);}lastShoot=a.shoot;lastHit=a.hit;
  }
  const malformed=agentActionPose({phase:Infinity,moveSpeed:NaN,hitTime:Infinity,shootTime:NaN,pitch:Infinity,sliding:NaN});
  assert.ok(numericLeaves(malformed).every(Number.isFinite));

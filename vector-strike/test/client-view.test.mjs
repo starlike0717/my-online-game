@@ -1,3 +1,4 @@
+import {addViewArms,updateViewArms,articulateAgent,poseAgentRig} from '../dist/rigging.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import vm from 'node:vm';
@@ -16,7 +17,7 @@ const source=await readFile(new URL('../dist/game.js',import.meta.url),'utf8');
 function body(name){const start=source.indexOf('function '+name+'(');assert.ok(start>=0,name);const next=source.slice(start+1).search(/\n(?:async )?function /);return source.slice(start,next<0?source.length:start+1+next)}
 function fixture(id=0){
  const elements=new Map(),element=()=>({hidden:true,textContent:'',style:{setProperty(){}},classList:{values:new Map(),toggle(key,value){this.values.set(key,value)}},querySelector(){return this.child??=element()}});
- const c=vm.createContext({THREE,weapons,addWeaponDetails,makeCrossbow,weaponActionPose,agentActionPose,cameraPosition,showViewWeapon,weaponViewPose,aimCameraPosition,zoomFov,advanceMovement,spreadForShot,
+ const c=vm.createContext({THREE,addViewArms,updateViewArms,articulateAgent,poseAgentRig,weapons,addWeaponDetails,makeCrossbow,weaponActionPose,agentActionPose,cameraPosition,showViewWeapon,weaponViewPose,aimCameraPosition,zoomFov,advanceMovement,spreadForShot,
   selectedWeapon:id,weaponRig:null,weaponParts:{},viewScene:new THREE.Scene(),scene:new THREE.Scene(),camera:new THREE.PerspectiveCamera(85,16/9,.08,240),viewCamera:new THREE.PerspectiveCamera(70,16/9,.02,10),matCache:new Map(),
   magazineInventory:new Map(),reserveInventory:new Map(),rigWeapon:null,muzzle:null,muzzleLight:null,ammo:0,reserveAmmo:0,pendingEquip:0,pendingReload:0,actionSeq:0,aim:false,reloading:0,shotCooldown:0,weaponSwitch:0,combat:false,mode:'bots',
   player:{pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,height:1.7,health:200,grounded:true,jumps:0,slide:0,slideCooldown:0,slideDir:new THREE.Vector3(),dash:0,dashCooldown:0,dashSpeed:0,speed:0,bob:0,land:0,stepOffset:0,coyote:.1,jumpBuffer:0},
