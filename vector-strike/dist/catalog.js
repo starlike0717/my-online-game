@@ -21,6 +21,7 @@ const handling={ar:[.2,13,.055],smg:[.14,17,.038],sg:[.23,10,.105],sr:[.32,8,.13
 const reserves={ar:[150,140,160,180,125,120,162,150,180,150],smg:[192,168,200,150,180,240,224,180,156,180],sg:[40,36,60,48,56,48,60,30],sr:[25,20,50,30,40,25,48,30],lmg:[200,225,240,300,180,240],hg:[90,42,120,75,56,36,100,85]};
 export const weapons=[];
 for(const [cat,g]of Object.entries(groups))g.names.forEach((name,i)=>{
+ name=({ar:'돌격소총',smg:'기관단총',sg:'산탄총',sr:'저격소총',lmg:'경기관총',hg:'권총'}[cat]||name)+' '+String(i+1).padStart(2,'0');
  const [damage,headMultiplier,rate,mag]=profiles[cat][i],range=ranges[cat],feel=handling[cat];
  const auto=['ar','smg','lmg'].includes(cat)||(cat==='sg'&&(i===2||i===6))||(cat==='hg'&&i===2);
  weapons.push({...g,id:weapons.length,name,cat,damage,headMultiplier,rate,mag,auto,reserve:reserves[cat][i],
@@ -34,9 +35,9 @@ for(const [cat,g]of Object.entries(groups))g.names.forEach((name,i)=>{
 categories.push({id:'bow',name:'활',en:'CHARGE BOW'},{id:'launcher',name:'발사기',en:'ROCKET LAUNCHER'},{id:'melee',name:'근접 무기',en:'MELEE'});
 const specialDefaults={pellets:1,auto:false,spread:0,rangeStart:50,rangeEnd:130,minDamage:.75,adsTime:.2,recovery:12,sideRecoil:0,color:0xb8c893};
 weapons.push(
- {...specialDefaults,id:50,name:'CB-1 WINDRUNNER',cat:'bow',mechanic:'arrow',damage:80,headMultiplier:1.8,rate:1.2,mag:1,reserve:24,reload:.55,recoil:.012,kick:.045,speed:1.1,chargeTime:.85,projectileSpeed:62,gravity:3},
- {...specialDefaults,id:51,name:'RL-1 COMET',cat:'launcher',mechanic:'rocket',damage:105,headMultiplier:1,rate:.7,mag:1,reserve:6,reload:2.6,recoil:.075,kick:.14,speed:.85,projectileSpeed:30,gravity:0,blastRadius:5,splashDamage:80},
- {...specialDefaults,id:52,name:'KN-1 SWIFT',ko:'전술 단검',shape:'knife',cat:'melee',mechanic:'melee',damage:45,headMultiplier:1.5,rate:2,mag:1,reserve:0,reload:0,recoil:.035,kick:.07,speed:1.25,rangeStart:2.5,rangeEnd:2.6,minDamage:1,reach:2.5,auto:true}
+ {...specialDefaults,id:50,name:'충전 활',cat:'bow',mechanic:'arrow',damage:80,headMultiplier:1.8,rate:1.2,mag:1,reserve:24,reload:.55,recoil:.012,kick:.045,speed:1.1,chargeTime:.85,projectileSpeed:62,gravity:3},
+ {...specialDefaults,id:51,name:'로켓 발사기',cat:'launcher',mechanic:'rocket',damage:105,headMultiplier:1,rate:.7,mag:1,reserve:6,reload:2.6,recoil:.075,kick:.14,speed:.85,projectileSpeed:30,gravity:0,blastRadius:5,splashDamage:80},
+ {...specialDefaults,id:52,name:'근접무기 01',ko:'전술 단검',shape:'knife',cat:'melee',mechanic:'melee',damage:45,headMultiplier:1.5,rate:2,mag:1,reserve:0,reload:0,recoil:.035,kick:.07,speed:1.25,rangeStart:2.5,rangeEnd:2.6,minDamage:1,reach:2.5,auto:true}
 );
 // name, Korean name, silhouette, body damage, head multiplier, swings/sec, reach, movement, length
 const meleeProfiles=[
@@ -62,8 +63,9 @@ const meleeProfiles=[
 ];
 for(const [name,ko,shape,damage,headMultiplier,rate,reach,speed,length]of meleeProfiles)weapons.push({...weapons[52],id:weapons.length,name,ko,shape,damage,headMultiplier,rate,reach,speed,length,rangeStart:reach,rangeEnd:reach+.1,swingTime:Math.min(.48,.7/rate),color:0x9eabb5});
 
-weapons.push({...weapons[28],id:weapons.length,name:'OS-1 OBLIVION',damage:240,headMultiplier:1.3,rate:.45,mag:1,reserve:5,reload:3.8,speed:.78,rangeStart:80,rangeEnd:160,minDamage:.9,oneShot:true});
+weapons.push({...weapons[28],id:weapons.length,name:'한방 저격총',damage:240,headMultiplier:1.3,rate:.45,mag:1,reserve:5,reload:3.8,speed:.78,rangeStart:80,rangeEnd:160,minDamage:.9,oneShot:true});
 
+// Passive perks stay readable; every blade also has an activated right-click skill.
 // Shared, readable abilities for all twenty melee weapons. IDs stay stable.
 const meleeTraits=[
  {kind:'jump',title:'에어 스텝',extraJumps:1,backMultiplier:1.5},
@@ -87,23 +89,35 @@ const meleeTraits=[
  {kind:'heal',title:'영혼 수확',heal:30,cooldown:4.5,backMultiplier:1.8},
  {kind:'ammo',title:'보급품 해체',ammoFraction:.3,cooldown:9,backMultiplier:1.7}
 ];
-weapons.filter(w=>w.mechanic==='melee').forEach((w,i)=>{w.perk=meleeTraits[i];w.backMultiplier=w.perk.backMultiplier;w.backstab=w.perk.backstab===true;w.extraJumps=w.perk.extraJumps||0});
+const activeMeleeAbilities=[
+ {kind:'backstab',title:'암살 찌르기',cooldown:8}, {kind:'tripleJump',title:'3단 도약',cooldown:9},
+ {kind:'skyDash',title:'상승 대시',cooldown:7}, {kind:'heal',title:'전투 회복',cooldown:12,amount:45},
+ {kind:'stun',title:'충격파',cooldown:10,range:8,duration:1.1}, {kind:'reload',title:'탄약 보급',cooldown:14,fraction:.25},
+ {kind:'backstab',title:'그림자 처형',cooldown:9}, {kind:'tripleJump',title:'구름 도약',cooldown:10},
+ {kind:'skyDash',title:'수직 돌진',cooldown:8}, {kind:'stun',title:'속박 강타',cooldown:11,range:8,duration:1.3},
+ {kind:'heal',title:'생명 흡수',cooldown:13,amount:55}, {kind:'reload',title:'탄창 회수',cooldown:15,fraction:.35},
+ {kind:'tripleJump',title:'공중 보법',cooldown:10}, {kind:'skyDash',title:'천공 찌르기',cooldown:8},
+ {kind:'stun',title:'전기 충격',cooldown:10,range:9,duration:1}, {kind:'heal',title:'영혼 수확',cooldown:14,amount:60},
+ {kind:'reload',title:'보급품 강탈',cooldown:16,fraction:.4}, {kind:'backstab',title:'급소 노리기',cooldown:9},
+ {kind:'skyDash',title:'돌파 상승',cooldown:8}, {kind:'tripleJump',title:'3단 도약',cooldown:11}
+];
+weapons.filter(w=>w.mechanic==='melee').forEach((w,i)=>{w.name='근접무기 '+String(i+1).padStart(2,'0');w.perk=meleeTraits[i];w.ability=activeMeleeAbilities[i];w.backMultiplier=w.perk.backMultiplier;w.backstab=w.perk.backstab===true;w.extraJumps=w.perk.extraJumps||0});
 
-// Sidearm mobility stays tied to the equipped weapon; existing IDs and prices stay stable.
+// Sidearms no longer grant dash; a few keep a passive air-step identity.
 const sidearmMobility=[
- {title:'전술 대시',dash:{speed:20,duration:.18,cooldown:4.5}},
+ {title:'빠른 조준',aimSpeed:1.12},
  {title:'리젠트 에어 스텝',extraJumps:1},
- {title:'스팅어 대시',dash:{speed:22,duration:.18,cooldown:5}},
+ {title:'빠른 재장전',reloadSpeed:1.12},
  {title:'레인저 에어 스텝',extraJumps:1},
- {title:'클래식 돌진',dash:{speed:21,duration:.2,cooldown:5}},
+ {title:'안정 사격',recoilScale:.9},
  {title:'피스메이커 에어 스텝',extraJumps:1},
- {title:'니들 기동술',extraJumps:1,dash:{speed:22,duration:.2,cooldown:5.5}},
- {title:'에이스 기동술',extraJumps:1,dash:{speed:20,duration:.2,cooldown:5}}
+ {title:'니들 에어 스텝',extraJumps:1},
+ {title:'에이스 에어 스텝',extraJumps:1}
 ];
 weapons.filter(w=>w.cat==='hg').forEach((w,i)=>{w.mobility=sidearmMobility[i];w.extraJumps=w.mobility.extraJumps||0;w.dash=w.mobility.dash});
 
 categories.push({id:'crossbow',name:'석궁',en:'CROSSBOW'});
 weapons.push(
- {...weapons[50],id:73,name:'XB-1 ARBALEST',ko:'컴파운드 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:82,headMultiplier:1.9,rate:1.05,mag:1,reserve:18,reload:1.45,speed:1.05,projectileSpeed:88,gravity:2.2,rangeStart:35,rangeEnd:100,minDamage:.75,color:0x91a89c},
- {...weapons[50],id:74,name:'XB-4 REPEATER',ko:'연발 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:48,headMultiplier:1.7,rate:2.2,mag:4,reserve:28,reload:2.1,speed:1,projectileSpeed:74,gravity:2.8,rangeStart:25,rangeEnd:85,minDamage:.7,color:0x9a967d}
+ {...weapons[50],id:73,name:'석궁 01',ko:'컴파운드 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:82,headMultiplier:1.9,rate:1.05,mag:1,reserve:18,reload:1.45,speed:1.05,projectileSpeed:88,gravity:2.2,rangeStart:35,rangeEnd:100,minDamage:.75,color:0x91a89c},
+ {...weapons[50],id:74,name:'연발 석궁',ko:'연발 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:48,headMultiplier:1.7,rate:2.2,mag:4,reserve:28,reload:2.1,speed:1,projectileSpeed:74,gravity:2.8,rangeStart:25,rangeEnd:85,minDamage:.7,color:0x9a967d}
 );

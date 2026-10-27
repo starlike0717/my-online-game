@@ -11,6 +11,7 @@ import { randomBytes,createHash,scrypt,timingSafeEqual } from 'node:crypto';
 import { promisify } from 'node:util';
 import { WebSocketServer,WebSocket } from 'ws';
 import {MAX_HEALTH} from './dist/combat.js';
+import {maps} from './dist/map-layouts.js';
 import { Arena } from './server/arena.mjs';
 import { Matchmaker,validTeamSize } from './server/matchmaker.mjs';
 import { normalizeProgress,publicProgress,applyResult } from './server/progression.mjs';
@@ -47,7 +48,7 @@ const server=http.createServer(async(req,res)=>{
     const url=new URL(req.url,'http://localhost'),route=url.pathname,ip=ipOf(req);
     if(route.startsWith('/api/')){
       if(!limit('api:'+ip,240,60000))return json(res,429,{error:'요청이 많습니다. 잠시 후 다시 시도하세요.'});
-      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,meleeAbilities:true,sidearmMobility:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
+      if(route==='/api/health'&&req.method==='GET')return json(res,200,{ok:true,version:3,mapCount:maps.length,accounts:true,online:true,matchmaking:true,socketIo:true,inventorySync:true,finiteAmmo:true,economy:true,threeSlots:true,meleeAbilities:true,sidearmMobility:true,maxHealth:MAX_HEALTH,teamSizes:[1,2,3,4],queued:matchmaker.count,rooms:rooms.size,players:[...rooms.values()].reduce((n,r)=>n+[...r.players.values()].filter(p=>p.connected).length,0)});
       if(route==='/api/guest'&&req.method==='POST'){
         const data=await body(req);let guest=guestFor(data.guestToken),guestToken=data.guestToken;
         if(!guest){guestToken=randomBytes(32).toString('base64url');const hash=hashToken(guestToken);guest={hash,id:randomBytes(12).toString('hex'),name:'GUEST',createdAt:Date.now(),progress:normalizeProgress(),records:[]};guests.set(hash,guest);await persist()}
@@ -83,11 +84,13 @@ const server=http.createServer(async(req,res)=>{
         }finally{authInFlight--}
       }
       const u=sessionUser(tokenFrom(req));
-      if(route==='/api/admin/status'&&req.method==='GET')return u?.role==='admin'&&u.username===adminConfig?.username?json(res,200,{ok:true,role:'admin',players:[...rooms.values()].reduce((n,r)=>n+r.players.size,0),rooms:rooms.size,queued:matchmaker.count,accounts:users.size}):json(res,403,{error:'관리자 권한이 필요합니다.'});
+      if(route.startsWith('/api/admin/')&&!(u?.role==='admin'&&u.username===adminConfig?.username))return json(res,403,{error:'관리자 권한이 필요합니다.'});
+      if(route==='/api/admin/status'&&req.method==='GET'){const active=[...rooms.values()].flatMap(r=>[...r.players.values()].filter(p=>p.connected&&!p.bot).map(p=>({name:p.name,level:p.level,room:r.code,team:p.team,health:p.health}))),queued=[...matchmaker.queues.values()].flatMap(q=>q.map(e=>({name:e.ws.identity?.name||'GUEST',level:e.level,teamSize:e.teamSize,queuedAt:e.queuedAt})));const accounts=[...users.values()].map(a=>({username:a.username,role:a.role==='admin'?'admin':'player',level:a.progress?.level||1,coins:normalizeEconomy(a.economy).coins,createdAt:a.createdAt})).sort((a,b)=>a.username.localeCompare(b.username,'ko'));return json(res,200,{ok:true,role:'admin',players:active,queued,rooms:rooms.size,accounts})}
+      if(route==='/api/admin/coins'&&req.method==='POST'){const data=await body(req),username=String(data.username||'').trim().toLowerCase(),amount=Number(data.amount);if(!Number.isSafeInteger(amount)||amount===0||Math.abs(amount)>10000000)return json(res,400,{error:'지급 또는 회수할 코인을 1~10,000,000 사이로 입력하세요.'});const target=users.get(username);if(!target)return json(res,404,{error:'해당 계정을 찾을 수 없습니다.'});const current=normalizeEconomy(target.economy);target.economy={...current,coins:Math.max(0,Math.min(1000000000,current.coins+amount))};await persist();return json(res,200,{ok:true,username,economy:publicEconomy(target.economy)})}
       if(route==='/api/me'&&req.method==='GET')return u?json(res,200,{user:publicUser(u)}):json(res,401,{error:'로그인이 필요합니다.'});
       if(route==='/api/logout'&&req.method==='POST'){sessions.delete(hashToken(tokenFrom(req)));await persist();return json(res,200,{ok:true})}
       if(route==='/api/records'&&req.method==='POST'){
-        if(!u)return json(res,401,{error:'로그인이 필요합니다.'});const r=await body(req);if(!['waves','timed','training','bots','online'].includes(r.mode)||!Number.isInteger(r.map)||r.map<0||r.map>3||![r.kills,r.score,r.wave,r.time].every(n=>Number.isFinite(n)&&n>=0&&n<=10000000))return json(res,400,{error:'올바르지 않은 기록입니다.'});const record={id:typeof r.id==='string'?r.id.slice(0,50):randomBytes(8).toString('hex'),date:Date.now(),map:r.map,mode:r.mode,kills:Math.floor(r.kills),score:Math.floor(r.score),wave:Math.floor(r.wave),time:Math.floor(r.time)};u.records=(u.records||[]).filter(x=>x.id!==record.id).concat(record).slice(-200);await persist();return json(res,200,{ok:true,record});
+        if(!u)return json(res,401,{error:'로그인이 필요합니다.'});const r=await body(req);if(!['waves','timed','training','bots','online'].includes(r.mode)||!Number.isInteger(r.map)||r.map<0||r.map>=maps.length||![r.kills,r.score,r.wave,r.time].every(n=>Number.isFinite(n)&&n>=0&&n<=10000000))return json(res,400,{error:'올바르지 않은 기록입니다.'});const record={id:typeof r.id==='string'?r.id.slice(0,50):randomBytes(8).toString('hex'),date:Date.now(),map:r.map,mode:r.mode,kills:Math.floor(r.kills),score:Math.floor(r.score),wave:Math.floor(r.wave),time:Math.floor(r.time)};u.records=(u.records||[]).filter(x=>x.id!==record.id).concat(record).slice(-200);await persist();return json(res,200,{ok:true,record});
       }
       return json(res,404,{error:'요청한 API를 찾을 수 없습니다.'});
     }
@@ -129,7 +132,8 @@ function finalise(room){
 }
 function matchQueued(){
   for(const queue of matchmaker.queues.values())for(const e of [...queue])if(e.ws.readyState!==WebSocket.OPEN)matchmaker.cancel(e.key);
-  for(const group of matchmaker.takeMatches(Math.max(0,100-rooms.size))){const room=createRoom(Math.floor(Math.random()*4),group.teamSize,'public');for(const entry of group.entries){try{attach(entry.ws,room,entry.weapon)}catch(error){send(entry.ws,{type:'error',error:error.message});cancelQueue(entry.ws)}}}
+  for(const group of matchmaker.takeMatches(Math.max(0,100-rooms.size))){const room=createRoom(Math.floor(Math.random()*maps.length),group.teamSize,'public');for(const entry of group.entries){try{attach(entry.ws,room,entry.weapon)}catch(error){send(entry.ws,{type:'error',error:error.message});cancelQueue(entry.ws)}}}
+  for(const queue of matchmaker.queues.values())for(const entry of [...queue])if(Date.now()-entry.queuedAt>=60000&&rooms.size<100){matchmaker.cancel(entry.key);entry.ws.queueEntry=null;try{const room=createRoom(Math.floor(Math.random()*maps.length),entry.teamSize,'bot');attach(entry.ws,room,entry.weapon);room.fillWithBots()}catch(error){send(entry.ws,{type:'error',error:error.message});cancelQueue(entry.ws)}}
   for(const queue of matchmaker.queues.values())for(const entry of queue)send(entry.ws,matchmaker.status(entry));
 }
 wss.on('connection',(ws,req)=>{
@@ -139,24 +143,27 @@ wss.on('connection',(ws,req)=>{
     if(Date.now()-messageWindow>1000){messages=0;messageWindow=Date.now()}if(++messages>80){ws.close(1008,'Too many messages');return}
     let m;try{m=JSON.parse(raw.toString());if(!m||typeof m!=='object')return}catch{return}
     if(m.type==='queueCancel'){cancelQueue(ws);send(ws,{type:'queueCancelled'});return}
-    if((m.type==='queue'||m.type==='join')&&!ws.playerId&&!ws.queueEntry){
+    if((m.type==='queue'||m.type==='queueBots'||m.type==='join')&&!ws.playerId&&!ws.queueEntry){
       try{
         const identity=identify(ws,m);if(!normalizeEconomy(identity.holder.economy).owned.includes(Number(m.weapon)||0))throw new Error('구매한 무기만 장착할 수 있습니다.');if(!validTeamSize(m.teamSize))throw new Error('1대1, 2대2, 3대3, 4대4 중 선택하세요.');
+        if(m.type==='queueBots'){const room=createRoom(Math.floor(Math.random()*maps.length),m.teamSize,'bot');attach(ws,room,Number(m.weapon)||0);room.fillWithBots();return}
         if(m.type==='queue'){const profile=publicProgress(identity.holder.progress);ws.queueEntry=matchmaker.enqueue({key:identity.key,ws,weapon:Number(m.weapon)||0,teamSize:m.teamSize,level:profile.level,rating:profile.rating});clearTimeout(ws.joinTimeout);send(ws,matchmaker.status(ws.queueEntry));matchQueued();return}
         const code=typeof m.room==='string'?m.room.trim().toUpperCase():'';if(code&&!/^[A-Z0-9]{4,8}$/.test(code))throw new Error('방 코드는 영문·숫자 4~8자입니다.');
-        const room=code?rooms.get(code):createRoom(Number(m.map)||0,m.teamSize,'code');if(!room)throw new Error('방을 찾을 수 없습니다. 코드를 확인하세요.');attach(ws,room,Number(m.weapon)||0);
+        const room=code?rooms.get(code):createRoom(clamp(Number(m.map)||0,0,maps.length-1),m.teamSize,'code');if(!room)throw new Error('방을 찾을 수 없습니다. 코드를 확인하세요.');attach(ws,room,Number(m.weapon)||0);
       }catch(error){if(ws.identity&&!ws.room&&!ws.queueEntry&&activeIdentities.get(ws.identity.key)===ws)activeIdentities.delete(ws.identity.key);send(ws,{type:'error',error:error.message})}return;
     }
     if(m.type==='ping')return send(ws,{type:'pong',time:m.time});
+    if(m.type==='adminCheats'){const holder=ws.identity?.holder;if(holder?.role!=='admin'||holder.username!==adminConfig?.username||!ws.room||!ws.playerId)return;const p=ws.room.players.get(ws.playerId),keys=['speed','fly','aim','evasion','health','ammo'];if(!p||!m.flags||keys.some(k=>typeof m.flags[k]!=='boolean'))return;p.adminCheats=Object.fromEntries(keys.map(k=>[k,m.flags[k]]));if(p.adminCheats.health)p.health=MAX_HEALTH;send(ws,{type:'adminCheats',id:p.id,flags:p.adminCheats,health:p.health})}
     if(!ws.room||!ws.playerId)return;
     if(m.type==='move'){if(!ws.room.move(ws.playerId,m)){const p=ws.room.players.get(ws.playerId);if(p&&p.health>0&&ws.room.phase!=='finished')send(ws,{type:'correct',x:p.x,y:p.y,z:p.z})}}
+    if(m.type==='meleeAbility'){ws.room.meleeAbility(ws.playerId)}
     if(m.type==='dash'){const accepted=ws.room.dash(ws.playerId,{right:m.right,forward:m.forward}),p=ws.room.players.get(ws.playerId);if(p)send(ws,{type:'dashAck',seq:m.seq,accepted,until:p.dashUntil,readyAt:p.dashReadyAt,speed:p.dashSpeed,direction:p.dashDirection||[0,0],x:p.x,y:p.y,z:p.z,serverTime:Date.now()})}
     if(m.type==='shoot'){const result=ws.room.shoot(ws.playerId,m.dir,{aim:m.aim===true});acknowledgeLoadout(ws,'shotAck',m,result.accepted)}
     if(m.type==='draw')ws.room.draw(ws.playerId,m.active!==false);
     if(m.type==='reload'){const accepted=ws.room.reload(ws.playerId);acknowledgeLoadout(ws,'reloadAck',m,accepted)}
     if(m.type==='equip'){const p=ws.room.players.get(ws.playerId),accepted=normalizeEconomy(ws.identity.holder.economy).owned.includes(m.weapon)&&(ws.room.equip(ws.playerId,m.weapon)||p.health>0&&ws.room.phase!=='finished'&&p.weapon===m.weapon);acknowledgeLoadout(ws,'equipAck',m,accepted)}
   });
-  ws.on('close',()=>{peers.delete(ws);clearTimeout(ws.joinTimeout);cancelQueue(ws);if(ws.identity&&activeIdentities.get(ws.identity.key)===ws)activeIdentities.delete(ws.identity.key);if(ws.room&&!closing){const room=ws.room;room.remove(ws.playerId);broadcast(room,{type:'left',count:[...room.players.values()].filter(p=>p.connected).length});finalise(room);if(![...room.players.values()].some(p=>p.connected))rooms.delete(room.code)}});ws.on('error',()=>{});
+  ws.on('close',()=>{peers.delete(ws);clearTimeout(ws.joinTimeout);cancelQueue(ws);if(ws.identity&&activeIdentities.get(ws.identity.key)===ws)activeIdentities.delete(ws.identity.key);if(ws.room&&!closing){const room=ws.room;room.remove(ws.playerId);broadcast(room,{type:'left',count:[...room.players.values()].filter(p=>p.connected).length});finalise(room);if(![...room.players.values()].some(p=>p.connected&&!p.bot))rooms.delete(room.code)}});ws.on('error',()=>{});
 });
 const tick=setInterval(()=>{for(const room of rooms.values()){room.tick();for(const event of room.events.splice(0))broadcast(room,event);finalise(room);broadcast(room,room.snapshot());if(room.phase==='finished'&&Date.now()-room.finishedAt>120000){for(const ws of peers)if(ws.room===room)ws.close(1000,'Match finished');rooms.delete(room.code)}}},50);
 const queueTick=setInterval(matchQueued,500);

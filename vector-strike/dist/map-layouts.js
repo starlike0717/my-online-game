@@ -4,14 +4,20 @@ export const maps=[
  {id:'construction',name:'HIGHRISE',ko:'건설 현장',desc:'빽빽한 골조와 자재 사이 근접 교전',tag:'DENSE CONSTRUCTION',coords:'SECTOR 01 / UNFINISHED HIGHRISE',sky:0xb8c3c7,fog:0xc4c5b8,ground:0x8b8b7c,wall:0xaaa99b,accent:0xf1b647,light:0xffe6bc,sun:2.5},
  {id:'battlefield',name:'NO MAN’S LAND',ko:'전장',desc:'참호와 무너진 폐허를 오가는 전투',tag:'TRENCH WARFARE',coords:'SECTOR 02 / ABANDONED FRONT',sky:0x626d71,fog:0x7b817c,ground:0x656052,wall:0x77776c,accent:0xb4c49a,light:0xe2dbbd,sun:1.9},
  {id:'bridge',name:'SKYBRIDGE',ko:'협곡 대교',desc:'협곡 위 교량의 길고 열린 사격선',tag:'LONG SIGHTLINES',coords:'SECTOR 03 / CANYON CROSSING',sky:0x8cbed7,fog:0xb1c9d5,ground:0x656f75,wall:0x526977,accent:0xeda966,light:0xe8f6ff,sun:2.4},
- {id:'open',name:'OPEN RANGE',ko:'빈 훈련장',desc:'장애물이 전혀 없는 평평한 훈련장',tag:'ZERO INTERNAL OBSTACLES',coords:'SECTOR 04 / CLEAR PRACTICE FLOOR',sky:0xc0d5df,fog:0xd3e0e3,ground:0xb8c3c1,wall:0x738e91,accent:0x5fe1d4,light:0xf4fcff,sun:2.0}
+ {id:'open',name:'OPEN RANGE',ko:'빈 훈련장',desc:'장애물이 전혀 없는 평평한 훈련장',tag:'ZERO INTERNAL OBSTACLES',coords:'SECTOR 04 / CLEAR PRACTICE FLOOR',sky:0xc0d5df,fog:0xd3e0e3,ground:0xb8c3c1,wall:0x738e91,accent:0x5fe1d4,light:0xf4fcff,sun:2.0},
+ {id:'citadel',name:'HIGH CITADEL',ko:'고지 요새',desc:'층층이 오르는 성벽과 저격용 전망대',tag:'VERTICAL FORTRESS',coords:'SECTOR 05 / CITADEL RIDGE',sky:0xbac4b9,fog:0xc0c5b3,ground:0x777b68,wall:0x9b9a7e,accent:0xd7b467,light:0xf8dfb4,sun:2.2},
+ {id:'skyline',name:'SKYLINE',ko:'스카이라인 옥상',desc:'고층 건물 사이 옥상 다리와 점프 루트',tag:'ROOFTOP RUN',coords:'SECTOR 06 / SKYLINE DISTRICT',sky:0x99b5c5,fog:0xb2c0bd,ground:0x58616b,wall:0x77818a,accent:0x67d8d2,light:0xf0e5ca,sun:2.3},
+ {id:'mesa',name:'RED MESA',ko:'붉은 협곡',desc:'절벽 위 테라스와 굽은 협곡길',tag:'CANYON HIGH GROUND',coords:'SECTOR 07 / RED MESA',sky:0xd2a879,fog:0xb99375,ground:0x88745b,wall:0xa97853,accent:0xf0b562,light:0xffd8a0,sun:2.5},
+ {id:'foundry',name:'IRON FOUNDRY',ko:'철강 제련소',desc:'용광로 위 캣워크와 컨베이어 고지',tag:'INDUSTRIAL CATWALKS',coords:'SECTOR 08 / IRON FOUNDRY',sky:0x696d6b,fog:0x76786e,ground:0x454a48,wall:0x68716c,accent:0xe98c48,light:0xf1c497,sun:2.0},
+ {id:'canopy',name:'GREEN CANOPY',ko:'수목 상층부',desc:'나무 꼭대기를 잇는 좁은 다리와 전망대',tag:'CANOPY CROSSING',coords:'SECTOR 09 / GREEN CANOPY',sky:0x9ec0ae,fog:0xaec1a7,ground:0x526a54,wall:0x61755a,accent:0xd1e886,light:0xffe4b7,sun:2.4},
+ {id:'spring',name:'SPRING YARD',ko:'스프링 시험장',desc:'점프 패드로 고지대에 오르는 운동장',tag:'TRAMPOLINE COMBAT',coords:'SECTOR 10 / SPRING TEST YARD',sky:0xa9cbd1,fog:0xb7cbca,ground:0x667c79,wall:0x657b75,accent:0x72f0dc,light:0xe7ffed,sun:2.2}
 ];
 
 const layouts=maps.map(()=>[]);
 function solid(map,x,z,w,d,h,color,y=h/2,name='cover'){
  layouts[map].push({x,y,z,w,h,d,color,name});
 }
-for(let index=0;index<4;index++){
+for(let index=0;index<maps.length;index++){
  const height=index===2?1.15:index===3?1.2:3.8;
  for(const z of [-27.7,27.7])solid(index,0,z,56,.6,height,maps[index].wall,height/2,'boundary');
  for(const x of [-27.7,27.7])solid(index,x,0,.6,54.8,height,maps[index].wall,height/2,'boundary');
@@ -36,6 +42,22 @@ solid(0,-7,5,4,3,1.2,0xa9a89a,.6,'work-platform');
 for(let n=0;n<3;n++)solid(0,-7,8.55-n*.65,4,.65,.3*(n+1),0x9a9e8d,.15*(n+1),'platform-step');
 for(const [x,z]of [[-22,-7],[-20,4],[12,14],[4,11],[-4,-2]])solid(0,x,z,2.7,.7,1,0xb7aaa0,.5,'safety-barrier');
 
+// High-ground arenas combine raised platforms with shallow, traversable stairs.
+function raised(map,x,z,w,d,top,color){solid(map,x,z,w,d,.6,color,top-.3,'raised-platform');for(const sx of [-1,1])for(const sz of [-1,1])solid(map,x+sx*(w/2-.3),z+sz*(d/2-.3),.45,.45,top,color,top/2,'platform-pillar');for(let i=0;i<Math.round(top/.28);i++){const h=Math.min(.28,top-i*.28),y=i*.28+h/2;solid(map,x-w/2-1.1,z+d/2+.8+i*.55,2.2,.55,h,color,y,'climb-stair')}}
+raised(4,-15,-13,11,9,3.1,0x8c9179);raised(4,13,-9,10,10,4.5,0x777d6c);raised(4,0,13,9,8,2.5,0x8d896f);
+for(const [x,z]of [[-21,-2],[-8,-4],[7,3],[20,10]])solid(4,x,z,2.6,2.5,1.8,0x7b806e,.9,'citadel-barricade');
+raised(5,-16,-12,10,9,3.2,0x596974);raised(5,0,3,9,8,4.2,0x56616c);raised(5,16,-12,10,9,3.2,0x596974);raised(5,0,19,8,7,2.6,0x535f68);
+for(const[x,z]of [[-22,3],[-8,-21],[8,15],[22,2]])solid(5,x,z,3,2,2.2,0x46515b,1.1,'roof-vent');
+raised(6,-17,-14,12,11,4.4,0x9e684b);raised(6,14,-12,13,12,3.4,0x996448);raised(6,-2,10,10,9,2.8,0xa27250);
+for(const[x,z]of [[-21,5],[-10,0],[8,-1],[21,8]])solid(6,x,z,3,1.2,2.4,0x80644e,1.2,'mesa-wall');
+raised(7,-15,-11,11,9,3.8,0x59635e);raised(7,13,-12,11,10,4.8,0x515b57);raised(7,0,13,13,8,3.1,0x5a625c);
+for(const[x,z]of [[-21,3],[0,-2],[21,2]])solid(7,x,z,1.1,1.1,5.2,0x7b5e4b,2.6,'foundry-stack');
+raised(8,-16,-11,11,9,3.7,0x657951);raised(8,14,-12,12,10,4.5,0x5c734e);raised(8,0,13,10,8,2.8,0x6c7b55);
+for(const[x,z]of [[-22,5],[-8,-4],[9,2],[22,4]])solid(8,x,z,1.1,1.1,7,0x574e3d,3.5,'tree-trunk');
+raised(9,-16,-13,10,9,3.8,0x4e6a69);raised(9,14,-12,10,10,4.8,0x4f6966);raised(9,0,13,10,8,3.1,0x526d69);
+// Spring pads use shallow colliders: landing on their top launches a player upward.
+for(const[x,z]of [[-20,11],[-7,-7],[8,12],[21,-6],[-17,-20],[17,-20]]){solid(9,x,z,2.2,2.2,.28,0x356e6b,.14,'trampoline-pad')}
+
 // Earth banks frame connected trenches. Broken high walls and one wreck create
 // very different cover heights from the construction site's tall open frames.
 for(const [x,z,w]of [[-16,-7,12],[12,-7,16],[-16,-3,12],[12,-3,16],[-16,6,10],[14,7,12]])solid(1,x,z,w,1.1,1.05,0x77705a,.525,'earth-bank');
@@ -57,7 +79,7 @@ function bounds(b){return{min:[b.x-b.w/2,b.y-b.h/2,b.z-b.d/2],max:[b.x+b.w/2,b.y
 export function mapBounds(index){return layouts[indexOf(index)].map(bounds)}
 
 export function buildMapObjects(THREE,group,index,{box,cylinder,mat,wallText}){
- index=indexOf(index);const m=maps[index],objects=[];
+ index=indexOf(index);const m=maps[index],objects=[],specials=[];
  const add=(x,y,z,w,h,d,color,options={})=>box(group,x,y,z,w,h,d,color,options);
  for(const b of layouts[index]){
   const object=add(b.x,b.y,b.z,b.w,b.h,b.d,b.color,{collision:true});
@@ -123,13 +145,22 @@ export function buildMapObjects(THREE,group,index,{box,cylinder,mat,wallText}){
   for(let n=0;n<11;n++)add(0,.019,-25+n*5,.13,.02,2.6,0xe5d7b7,{shadow:false});
   for(const z of [-22,22])for(let n=0;n<14;n++)add(-9+n*1.4,.02,z,.62,.02,.26,0xd5dedc,{shadow:false});
   text('SKYBRIDGE',0,13.35,-8.38,12,.72,'#d5e9ed');
- }else{
+ }else if(index===3){
   // The fourth map deliberately contains only paint inside its four walls.
   for(const x of [-20,-10,0,10,20])add(x,.016,0,.045,.016,53,0x8dabae,{shadow:false});
   for(const z of [-20,-10,0,10,20])add(0,.017,z,53,.016,.045,0x8dabae,{shadow:false});
   for(const z of [-25,25])add(0,.019,z,51,.018,.13,0x5fc5bb,{shadow:false});
   for(const x of [-25,25])add(x,.019,0,.13,.018,51,0x5fc5bb,{shadow:false});
   text('OPEN RANGE',0,.73,-27.38,11,.65,'#d2fff2');
+ }else{
+  const colors=[0xd7b467,0x67d8d2,0xf0b562,0xe98c48,0xd1e886,0x72f0dc],color=colors[index-4];
+  for(const b of layouts[index])if(b.name==='raised-platform'){add(b.x,b.y+b.h/2+.06,b.z,b.w,.12,b.d,color);}
+  if(index===4)text('HIGH CITADEL',0,2.2,-27.38,13,.85,'#f2dcaa');
+  if(index===5)text('SKYLINE ROOFTOPS',0,4.8,-27.38,15,.9,'#a6f3ea');
+  if(index===6)text('RED MESA',0,2.3,-27.38,12,.8,'#ffe1b4');
+  if(index===7)text('IRON FOUNDRY',0,2.5,-27.38,14,.8,'#ffc293');
+  if(index===8)text('GREEN CANOPY',0,2.2,-27.38,14,.8,'#e5f4b9');
+  if(index===9){text('SPRING YARD',0,2.2,-27.38,14,.8,'#c8fff1');for(const b of layouts[index].filter(o=>o.name==='trampoline-pad')){const mesh=cylinder(group,b.x,b.y+b.h/2,b.z,1.08,1.08,.08,0x51c8bd,24);mesh.material=mat(0x51c8bd,.25,.3,.25);const ring=new THREE.Mesh(new THREE.TorusGeometry(1.08,.09,8,32),mat(0xa1fff0,.15,.25,.7));ring.rotation.x=Math.PI/2;ring.position.set(b.x,b.y+b.h/2+.06,b.z);group.add(ring);specials.push({kind:'trampoline',x:b.x,z:b.z,y:b.y+b.h/2,radius:1.15})}}
  }
- return{objects,colliderCount:objects.length,internalCount:objects.length-4,map:m};
+ return{objects,colliderCount:objects.length,internalCount:objects.length-4,map:m,specials};
 }

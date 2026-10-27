@@ -13,7 +13,7 @@ function fixture(index){
 }
 
 test('four maps have distinct themes and collision counts, with a truly empty fourth arena',()=>{
- assert.equal(maps.length,4);assert.equal(new Set(maps.map(m=>m.id)).size,4);
+ assert.equal(maps.length,10);assert.equal(new Set(maps.map(m=>m.id)).size,10);
  assert.deepEqual(maps.map(m=>m.id),['construction','battlefield','bridge','open']);
  for(const m of maps)for(const key of ['id','name','ko','desc','tag','coords','sky','fog','ground','wall','accent','light','sun'])assert.ok(m[key]!==undefined,`${m.id}.${key}`);
  const counts=maps.map((_,i)=>mapBounds(i).length);assert.equal(new Set(counts).size,4);assert.ok(counts[0]>counts[1]&&counts[1]>counts[2]);assert.equal(counts[3],4);

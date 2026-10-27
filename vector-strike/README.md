@@ -153,3 +153,8 @@ GitHub 통합 저장소의 `vector-strike/` 폴더를 사용합니다. 자동 �
 Blender 4.5 LTS에서 제작한 장전·앉기·슬라이드·사격·피격 키프레임은 `assets/animation/vector-motion.blend`에 보관합니다. `scripts/author-motion.py`를 Blender의 백그라운드 Python 실행으로 열면 편집용 리그와 `dist/motion-clips.js`를 다시 생성합니다. 게임은 샘플링된 곡선을 보간하고 팔의 두 관절 IK로 손을 총과 탄창에 연결합니다. 전신 크기를 눌러 앉히지 않고 골반·등·무릎·발목 관절로 자세를 만듭니다. Blender는 제작 때만 필요하며 HTML 실행에 필요하지 않습니다.
 
 설정 → **단축키 · 모바일 버튼 편집**에서 PC 키와 모바일 버튼을 변경합니다. 키가 겹치면 두 동작의 키를 교환하며 ESC는 일시정지·취소로 고정됩니다. 모바일 버튼과 조이스틱은 끌어서 이동하고 선택 후 크기를 조절합니다. 가로·세로 배치를 따로 저장하며 각각 초기화할 수 있습니다. 설정은 이 브라우저에 자동 저장됩니다. 터치 기기에서는 오른쪽 위 메뉴 버튼으로 일시정지 후 설정을 열 수 있습니다.
+
+
+Mobile controls support an editable shared jump/slide button: tap to jump, or hold while moving to slide. The aim button gently assists toward visible opponents; when it is released, a weapon fires after an opponent stays exactly under the crosshair briefly. Both assist options can be changed in Settings. Double-tap or double-click the lobby robot to enter the hidden Vector Atrium, where fixed bots and bullseye targets respawn after three seconds and duel pads join public 1v1, 2v2, or 3v3 matchmaking. Walk through the EXIT arch to return to the lobby.
+
+The ten arenas include High Citadel, Skyline rooftops, Red Mesa, Iron Foundry, Green Canopy, and Spring Yard. Several maps have climbable high-ground routes; Spring Yard trampoline pads launch players upward. A generated armor tile is applied to player and rival robot meshes, and is embedded in the standalone HTML build.
