@@ -3,10 +3,10 @@
   "version": "3.0.0",
   "private": true,
   "type": "module",
-  "description": "A procedural 3D arena FPS with 10 distinct maps with elevated routes and trampoline pads and 75 weapons, including crossbows and 20 melee weapons",
+  "description": "A procedural 3D arena FPS with 10 distinct maps with elevated routes and trampoline pads and 36 unique weapons, including crossbows and 20 melee weapons",
   "scripts": {
     "start": "node server.mjs",
-    "check": "node --check server.mjs && node --check server/admin.mjs && node --check server/arena.mjs && node --check server/matchmaker.mjs && node --check server/progression.mjs && node --check dist/projectiles.js && node --check dist/movement.js && node --check dist/combat.js && node --check dist/ammo.js && node --check dist/mouse-look.js && node --check dist/map-layouts.js && node --check scripts/build.mjs && node --check dist/bot-combat.js && node --check dist/controls.js && node --check dist/mobile-assist.js && node --check dist/hub.js && node --check dist/rigging.js && node --check dist/motion-clips.js && node --check dist/animation.js && node --check dist/weapon-models.js && node --check dist/mobility.js && node --check dist/melee.js && node --check dist/economy.js && node --check dist/view.js && node --check dist/audio.js && node --check dist/game.js && node --check dist/services.js && node --check dist/agent-skins.js && node --check dist/catalog.js",
+    "check": "node --check server.mjs && node --check server/admin.mjs && node --check server/arena.mjs && node --check server/matchmaker.mjs && node --check server/progression.mjs && node --check dist/projectiles.js && node --check dist/movement.js && node --check dist/combat.js && node --check dist/ammo.js && node --check dist/mouse-look.js && node --check dist/world-rules.js && node --check dist/map-layouts.js && node --check scripts/build.mjs && node --check dist/bot-combat.js && node --check dist/controls.js && node --check dist/mobile-assist.js && node --check dist/hub.js && node --check dist/rigging.js && node --check dist/motion-clips.js && node --check dist/animation.js && node --check dist/weapon-models.js && node --check dist/mobility.js && node --check dist/melee.js && node --check dist/economy.js && node --check dist/view.js && node --check dist/audio.js && node --check dist/game.js && node --check dist/services.js && node --check dist/agent-skins.js && node --check dist/catalog.js",
     "build": "node scripts/build.mjs",
     "test": "node --test test/*.test.mjs",
     "online": "node scripts/start-online.mjs",

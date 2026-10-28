@@ -1,3 +1,4 @@
+import {clientGlobals} from './runtime-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -6,7 +7,7 @@ import * as THREE from '../dist/vendor/three.module.js';
 import {MAX_HEALTH,BOT_MAX_HEALTH} from '../dist/combat.js';
 const source=await readFile(new URL('../dist/game.js',import.meta.url),'utf8');
 function body(name){const a=source.indexOf('function '+name+'('),b=source.indexOf('\n',a);return source.slice(a,b)}
-function fixture(){const elements=new Map(),ctx={clearRect(){},fillRect(){},fillText(){}};const c=vm.createContext({THREE,MAX_HEALTH,BOT_MAX_HEALTH,crypto,mode:'bots',wave:1,practice:{difficulty:'normal',invincible:false},player:{pos:new THREE.Vector3(0,0,19),health:MAX_HEALTH},rand:(a,b)=>a,validPosition:()=>true,makeAgent:()=>new THREE.Group(),worldGroup:new THREE.Group(),enemies:[],kills:0,score:0,totalTime:0,respawns:[],net:{players:new Map()},retireAgent(){},notice(){},setTimeout(){},formatTime:()=>'',clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),document:{createElement(tag){return tag==='canvas'?{getContext:()=>ctx}:{innerHTML:''}}},$:(id)=>{if(!elements.has(id))elements.set(id,{style:{},prepend(){},textContent:''});return elements.get(id)}});new vm.Script(['spawnEnemy','updateTargetTag','updateHud','killEnemy'].map(body).join('\n')).runInContext(c);return{c,elements}}
+function fixture(){const elements=new Map(),ctx={clearRect(){},fillRect(){},fillText(){}};const c=vm.createContext({...clientGlobals(),THREE,MAX_HEALTH,BOT_MAX_HEALTH,crypto,mode:'bots',wave:1,practice:{difficulty:'normal',invincible:false},player:{pos:new THREE.Vector3(0,0,19),health:MAX_HEALTH},rand:(a,b)=>a,validPosition:()=>true,makeAgent:()=>new THREE.Group(),worldGroup:new THREE.Group(),enemies:[],kills:0,score:0,totalTime:0,respawns:[],net:{players:new Map()},retireAgent(){},notice(){},setTimeout(){},formatTime:()=>'',clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),document:{createElement(tag){return tag==='canvas'?{getContext:()=>ctx}:{innerHTML:''}}},$:(id)=>{if(!elements.has(id))elements.set(id,{style:{},prepend(){},textContent:''});return elements.get(id)}});new vm.Script(['spawnEnemy','updateTargetTag','updateHud','killEnemy'].map(body).join('\n')).runInContext(c);return{c,elements}}
 test('AI bots, fixed targets, and late-wave enemies all spawn at 100 HP',()=>{
  assert.equal(MAX_HEALTH,200);const{c}=fixture();for(const mode of ['bots','training','waves','timed'])for(const wave of [1,20]){c.mode=mode;c.wave=wave;c.enemies=[];c.spawnEnemy(mode==='training');assert.equal(c.enemies[0].hp,100);assert.equal(c.enemies[0].maxHp,100)}
 });
@@ -18,5 +19,5 @@ test('elimination healing works above 100 and caps at 200',()=>{
 });
 
 test('a cleared wave fully restores 200 HP and requests exactly one wave payout',async()=>{
- const payouts=[],c=vm.createContext({MAX_HEALTH,waveDelay:0,wave:4,kills:24,score:0,player:{health:7},services:{rewardWave(wave,kills){payouts.push([wave,kills]);return Promise.resolve(200)}},announce(){},notice(){},toast(){},updateHud(){},clearBotShots(){},refillAllAmmo(){c.refills=(c.refills||0)+1}});new vm.Script(body('completeWave')).runInContext(c);c.completeWave();assert.equal(c.player.health,200);assert.equal(c.waveDelay,3);assert.equal(c.refills,1);assert.deepEqual(payouts,[[4,24]]);await Promise.resolve();
+ const payouts=[],c=vm.createContext({...clientGlobals(),MAX_HEALTH,waveDelay:0,wave:4,kills:24,score:0,player:{health:7},services:{rewardWave(wave,kills){payouts.push([wave,kills]);return Promise.resolve(200)}},announce(){},notice(){},toast(){},updateHud(){},clearBotShots(){},refillAllAmmo(){c.refills=(c.refills||0)+1}});new vm.Script(body('completeWave')).runInContext(c);c.completeWave();assert.equal(c.player.health,200);assert.equal(c.waveDelay,3);assert.equal(c.refills,1);assert.deepEqual(payouts,[[4,24]]);await Promise.resolve();
 });

@@ -13,3 +13,22 @@ export function bindJumpSlide(button,{jump,slide,canSlide,active=()=>true,setTim
  button.onpointerdown=e=>{e.preventDefault();if(!active())return;cancel();pointer=e.pointerId;button.setPointerCapture(pointer);if(!canSlide()){jump();fired=true}else timer=setTimer(()=>{timer=null;if(!active())return;fired=true;if(!slide())jump()},260)};
  button.onpointerup=e=>{if(e.pointerId!==pointer)return;if(!fired&&active())jump();cancel()};button.onpointercancel=cancel;button.onlostpointercapture=cancel;return cancel;
 }
+
+// A tap persists until the next tap, including after pointer capture is released.
+export function bindToggle(button,{active=()=>true,get,set}){
+ button.onpointerdown=e=>{e.preventDefault();if(!active())return;set(!get());button.classList.toggle('active',get());button.setAttribute('aria-pressed',String(get()))};
+}
+export function toggleSlide(player){
+ if(player.slide>0){player.slide=0;player.vel.x*=.35;player.vel.z*=.35;return 'stop'}
+ if(!player.grounded||player.dash>0)return null;
+ player.slideCooldown=0;player.slide=.9;player.slideCooldown=1.25;
+ if(Math.hypot(player.vel.x,player.vel.z)>1)player.slideDir.copy(player.vel).setY(0).normalize();
+ else player.slideDir.set(-Math.sin(player.yaw),0,-Math.cos(player.yaw));
+ player.vel.x=player.slideDir.x*13;player.vel.z=player.slideDir.z*13;return 'start';
+}
+export class ShotBuffer{
+ constructor(){this.until=0;this.weapon=null}
+ request(now,weapon){this.until=now+350;this.weapon=weapon}
+ clear(){this.until=0}
+ consume(now,weapon,ready){if(this.weapon!==weapon||now>this.until){this.clear();return false}if(!ready||!this.until)return false;this.clear();return true}
+}

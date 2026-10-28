@@ -1,3 +1,4 @@
+import {clientGlobals} from './runtime-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -23,7 +24,7 @@ function fixture(){
  const enemy={id:'bot',mesh,speed:0,phase:0,cooldown:-1,strafe:1,multiplier:1,turn:0,training:false};
  const player={pos:new THREE.Vector3(0,0,12),vel:new THREE.Vector3(),height:1.7,yaw:0,health:MAX_HEALTH};
  const stats={shots:0,impacts:0,refills:0,payouts:0};
- const c=vm.createContext({THREE,MAX_HEALTH,BOT_SHOT_LIMIT,createBotShot,stepBotShot,weapons,scene,worldGroup:world,player,enemies:[enemy],botProjectiles:[],botShotSeq:0,v3:new THREE.Vector3(),mode:'waves',practice:{difficulty:'normal',invincible:false},wave:1,totalTime:0,paused:false,damageOpacity:0,audio:null,
+ const c=vm.createContext({...clientGlobals(),THREE,MAX_HEALTH,BOT_SHOT_LIMIT,createBotShot,stepBotShot,weapons,scene,worldGroup:world,player,enemies:[enemy],botProjectiles:[],botShotSeq:0,v3:new THREE.Vector3(),mode:'waves',practice:{difficulty:'normal',invincible:false},wave:1,totalTime:0,paused:false,damageOpacity:0,audio:null,
   planBotShot:options=>planBotShot(options,()=>0),rand:(a,b)=>(a+b)/2,exp:(v,g,k,dt)=>v+(g-v)*(1-Math.exp(-k*dt)),validPosition:()=>true,cover:[],coverMeshes:[],
   animateAgent(){},fireAgent(){stats.shots++},impact(){stats.impacts++},sound(){},updateHud(){},finish(){c.paused=true},
   localAvatar:null,dyingAgents:[],projectileVisuals:new Map(),localProjectiles:[],remoteAgents:new Map(),effects:[],decor:[],removeProjectileVisual(){},
@@ -91,7 +92,7 @@ test('actual bot launch caps visible bullets and a stun cancels the pending tele
 
 function crossbowFixture(weapon){
  const visuals=[],timers=[];const elements=new Map();
- const c=vm.createContext({THREE,weapons,selectedWeapon:weapon,combat:true,paused:false,onlineDead:false,mode:'training',ammo:weapons[weapon].mag,reserveAmmo:weapons[weapon].reserve,reloading:0,shotCooldown:0,drawing:false,drawStarted:0,shotIndex:0,recoil:0,aim:false,meleeSwing:0,meleeBackSwing:false,muzzleTime:0,muzzle:new THREE.Object3D(),muzzleLight:{intensity:0},motion:{recoilSide:0,kickVelocity:0},camera:new THREE.PerspectiveCamera(),player:{grounded:true,speed:0,height:1.7},localAvatar:null,localProjectiles:[],projectileSeq:0,magazineInventory:new Map(),reserveInventory:new Map(),pendingReload:0,
+ const c=vm.createContext({...clientGlobals(),THREE,weapons,selectedWeapon:weapon,combat:true,paused:false,onlineDead:false,mode:'training',ammo:weapons[weapon].mag,reserveAmmo:weapons[weapon].reserve,reloading:0,shotCooldown:0,drawing:false,drawStarted:0,shotIndex:0,recoil:0,aim:false,meleeSwing:0,meleeBackSwing:false,muzzleTime:0,muzzle:new THREE.Object3D(),muzzleLight:{intensity:0},motion:{recoilSide:0,kickVelocity:0},camera:new THREE.PerspectiveCamera(),player:{grounded:true,speed:0,height:1.7},localAvatar:null,localProjectiles:[],projectileSeq:0,magazineInventory:new Map(),reserveInventory:new Map(),pendingReload:0,
   isPlayerStunned:()=>false,attackRay:()=>({origin:new THREE.Vector3(0,1.7,2),base:new THREE.Vector3(0,0,-1)}),makeProjectile,refillMagazine,makeProjectileVisual(p){visuals.push(p)},sound(){},updateWeaponHud(){},notice(){},cancelDraw(){c.drawing=false},setTimeout(callback,delay){timers.push({callback,delay})},$:(id)=>{if(!elements.has(id))elements.set(id,{hidden:true,textContent:''});return elements.get(id)}
  });
  extract(c,['beginAttack','shoot','reload','completeWeaponReload']);return {c,visuals,timers,elements};
@@ -137,7 +138,7 @@ test('actual frame preserves a self-rocket elimination on the clear frame withou
  c.updateProjectiles=()=>{
   c.enemies=[];
   // Exercise the actual local rocket splash resolution, including self-damage, in that phase.
-  c.resolvePracticeProjectile({weapon:51,owner:'local',kind:'rocket',position:[0,0,12],power:1,travel:0},{expired:false});
+  c.resolvePracticeProjectile({weapon:7,owner:'local',kind:'rocket',position:[0,0,12],power:1,travel:0},{expired:false});
  };
  c.frame(16);
  assert.equal(stats.finishes,1);assert.equal(c.paused,true);assert.equal(player.health,0);assert.equal(stats.impulses,1);

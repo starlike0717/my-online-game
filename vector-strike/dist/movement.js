@@ -1,3 +1,4 @@
+import {groundHeight} from './world-rules.js';
 import {dashDirection} from './mobility.js';
 import {Vector3} from './vendor/three.module.js';
 const clamp=(v,a,b)=>Math.max(a,Math.min(b,v)),lerp=(a,b,t)=>a+(b-a)*t,exp=(v,goal,speed,dt)=>lerp(v,goal,1-Math.exp(-speed*dt));
@@ -15,7 +16,7 @@ export function startSlide(player){
  if(player.dash>0||player.slideCooldown>0||!player.grounded||Math.hypot(player.vel.x,player.vel.z)<=3)return false;
  player.slide=.9;player.slideCooldown=1.25;player.slideDir.copy(player.vel).setY(0).normalize();player.vel.x=player.slideDir.x*13;player.vel.z=player.slideDir.z*13;return true;
 }
-function horizontalMove(player,cover,dx,dz){const p=player.pos,r=.34,head=p.y+player.height-.12,feet=p.y+.16;for(const axis of ['x','z']){const delta=axis==='x'?dx:dz;p[axis]+=delta;for(const b of cover){if(p.x+r>b.min.x&&p.x-r<b.max.x&&p.z+r>b.min.z&&p.z-r<b.max.z&&head>b.min.y&&feet<b.max.y){if(player.grounded&&b.max.y-p.y<=.36){player.stepOffset+=(b.max.y-p.y);p.y=b.max.y;continue}if(delta>0)p[axis]=b.min[axis]-r;else if(delta<0)p[axis]=b.max[axis]+r;if(axis==='x')player.vel.x=0;else player.vel.z=0}}}p.x=clamp(p.x,-26.8,26.8);p.z=clamp(p.z,-26.8,26.8)}
+function horizontalMove(player,cover,dx,dz,world){const p=player.pos,r=.34,head=p.y+player.height-.12,feet=p.y+.16;for(const axis of ['x','z']){const delta=axis==='x'?dx:dz;p[axis]+=delta;for(const b of cover){if(p.x+r>b.min.x&&p.x-r<b.max.x&&p.z+r>b.min.z&&p.z-r<b.max.z&&head>b.min.y&&feet<b.max.y){if(player.grounded&&b.max.y-p.y<=.36){player.stepOffset+=(b.max.y-p.y);p.y=b.max.y;continue}if(delta>0)p[axis]=b.min[axis]-r;else if(delta<0)p[axis]=b.max[axis]+r;if(axis==='x')player.vel.x=0;else player.vel.z=0}}}const limit=world?.limit??26.8;p.x=clamp(p.x,-(world?.limitX??limit),world?.limitX??limit);p.z=clamp(p.z,-(world?.limitZ??limit),world?.limitZ??limit)}
 function stepMovement(player,control,w,cover,dt,events){
  player.dashCooldown=Math.max(0,(player.dashCooldown||0)-dt);
  const {right=0,forward=0,aim=false}=control,crouch=control.crouch&&player.slide<=0,stunned=control.stunned===true;if(stunned){player.dash=0;player.vel.x=0;player.vel.z=0;player.slide=0;player.jumpBuffer=0;return}
@@ -31,7 +32,7 @@ function stepMovement(player,control,w,cover,dt,events){
  else{player.vel.x=exp(player.vel.x,0,.3,dt);player.vel.z=exp(player.vel.z,0,.3,dt)}
  let height=player.slide>0?.85:crouch?1.1:1.7;
  if(height>player.height&&cover.some(b=>player.pos.x+.28>b.min.x&&player.pos.x-.28<b.max.x&&player.pos.z+.28>b.min.z&&player.pos.z-.28<b.max.z&&b.min.y>player.pos.y+.2&&b.min.y<player.pos.y+height))height=player.height;
- player.height=exp(player.height,height,16,dt);const oldY=player.pos.y;player.vel.y-=23*dt;horizontalMove(player,cover,player.vel.x*dt,player.vel.z*dt);player.pos.y+=player.vel.y*dt;if(dashEnded){const speed=Math.hypot(player.vel.x,player.vel.z);if(speed>14.2){player.vel.x*=14.2/speed;player.vel.z*=14.2/speed}}let floor=0;
+ player.height=exp(player.height,height,16,dt);const oldY=player.pos.y;player.vel.y-=23*dt;horizontalMove(player,cover,player.vel.x*dt,player.vel.z*dt,control.world);player.pos.y+=player.vel.y*dt;if(dashEnded){const speed=Math.hypot(player.vel.x,player.vel.z);if(speed>14.2){player.vel.x*=14.2/speed;player.vel.z*=14.2/speed}}let floor=groundHeight(control.world,player.pos.x,player.pos.z);
  for(const b of cover){if(player.pos.x+.25>b.min.x&&player.pos.x-.25<b.max.x&&player.pos.z+.25>b.min.z&&player.pos.z-.25<b.max.z){if(player.vel.y<=0&&oldY>=b.max.y-.35&&player.pos.y<=b.max.y)floor=Math.max(floor,b.max.y);else if(player.vel.y>0&&oldY+player.height<=b.min.y&&player.pos.y+player.height>=b.min.y){player.pos.y=b.min.y-player.height;player.vel.y=0}}}
  if(player.pos.y<=floor){if(!player.grounded&&player.vel.y<-3)events.push({type:'land',impulse:Math.min(2.5,-player.vel.y*.14)});player.pos.y=floor;player.vel.y=0;player.grounded=true;player.jumps=0}else player.grounded=false;
 }

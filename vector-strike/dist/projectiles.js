@@ -1,3 +1,4 @@
+import {groundHeight} from './world-rules.js';
 import {rayActor,rayBox} from './combat.js';
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export const chargePower=(elapsed,w)=>.5+.5*clamp(elapsed/w.chargeTime,0,1);
@@ -6,17 +7,17 @@ export function makeProjectile(id,owner,w,origin,direction,power=1){
  return {id,owner,weapon:w.id,kind:w.mechanic,position:origin.slice(),velocity:direction.map(n=>n/length*speed),gravity:w.gravity,power,travel:0,life:5};
 }
 // Swept collision, rather than endpoint overlap, keeps fast arrows from tunnelling through heads/walls.
-export function stepProjectile(p,dt,blocks,actors){
+export function stepProjectile(p,dt,blocks,actors,world=null){
  if(dt<=0)return {done:false};
  const delta=p.velocity.map((n,i)=>n*dt-(i===1?p.gravity*dt*dt/2:0)),length=Math.hypot(...delta),dir=delta.map(n=>n/length);
  let nearest=length+.00001,target=null,head=false,wall=false;
- if(dir[1]<0){const ground=-p.position[1]/dir[1];if(ground>=0&&ground<=nearest){nearest=ground;wall=true}}
+ if(dir[1]<0){const ground=-p.position[1]/dir[1];if(ground>=0&&ground<=nearest&&Number.isFinite(groundHeight(world,p.position[0]+dir[0]*ground,p.position[2]+dir[2]*ground))){nearest=ground;wall=true}}
  for(const b of blocks){const d=rayBox(p.position,dir,b);if(d<=nearest){nearest=d;wall=true;target=null}}
  for(const actor of actors){if(actor.id===p.owner||actor.health<=0)continue;const hit=rayActor(p.position,dir,actor);if(hit.distance<nearest){nearest=hit.distance;target=actor;head=hit.head;wall=false}}
  p.velocity[1]-=p.gravity*dt;p.life-=dt;
  const travel=Math.min(length,nearest);p.position=p.position.map((v,i)=>v+dir[i]*travel);p.travel+=travel;
  if(target||wall){if(wall)p.position=p.position.map((v,i)=>v-dir[i]*.04);return {done:true,target,head,wall}}
- if(p.life<=0||p.position[1]<-.1||Math.abs(p.position[0])>36||Math.abs(p.position[2])>36)return {done:true,target:null,head:false,wall:false,expired:true};
+ if(p.life<=0||p.position[1]<(world?.deathY??-.1)||Math.abs(p.position[0])>(world?.limit??36)||Math.abs(p.position[2])>(world?.limit??36))return {done:true,target:null,head:false,wall:false,expired:true};
  return {done:false};
 }
 export function blastHits(p,w,actors,blocks,directId=null){

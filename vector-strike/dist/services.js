@@ -1,3 +1,4 @@
+import {CATALOG_VERSION} from './catalog.js';
 import {normalizeEconomy,purchase,credit,waveReward} from './economy.js';
 import {io} from 'socket.io-client';
 const $=id=>document.getElementById(id);
@@ -46,7 +47,7 @@ async function refreshIdentity(){
 }
 function checkServer(){
  if(checking)return checking;const revision=generation;
- checking=(async()=>{$('onlineServerStatus').textContent='서버 연결 확인 중…';try{const result=await request('GET','/api/health');if(revision!==generation)return false;if(!result.online||!result.matchmaking||!result.socketIo||!result.inventorySync||!result.finiteAmmo||!result.economy||!result.meleeAbilities||!result.sidearmMobility||!result.mapCount||result.version<3)throw new Error('매칭을 지원하는 최신 Node.js 서버로 업데이트해 주세요.');await refreshIdentity();if(revision!==generation)return false;ready=true;$('onlineServerStatus').textContent=`서버 연결됨 · ${result.players}명 접속 · ${result.queued}명 매칭 대기`;$('onlineServerStatus').classList.add('ready');$('serverBadgeText').textContent='온라인 매칭 가능';return true}catch(error){if(revision!==generation)return false;ready=false;$('onlineServerStatus').textContent=backend?error.message:'Node.js 서버 주소를 입력해 주세요.';$('onlineServerStatus').classList.remove('ready');$('serverBadgeText').textContent='게스트 플레이';return false}finally{if(revision===generation)checking=null}})();return checking;
+ checking=(async()=>{$('onlineServerStatus').textContent='서버 연결 확인 중…';try{const result=await request('GET','/api/health');if(revision!==generation)return false;if(result.catalogVersion!==CATALOG_VERSION||!result.online||!result.matchmaking||!result.socketIo||!result.inventorySync||!result.finiteAmmo||!result.economy||!result.meleeAbilities||!result.sidearmMobility||!result.mapCount||result.version<3)throw new Error('매칭을 지원하는 최신 Node.js 서버로 업데이트해 주세요.');await refreshIdentity();if(revision!==generation)return false;ready=true;$('onlineServerStatus').textContent=`서버 연결됨 · ${result.players}명 접속 · ${result.queued}명 매칭 대기`;$('onlineServerStatus').classList.add('ready');$('serverBadgeText').textContent='온라인 매칭 가능';return true}catch(error){if(revision!==generation)return false;ready=false;$('onlineServerStatus').textContent=backend?error.message:'Node.js 서버 주소를 입력해 주세요.';$('onlineServerStatus').classList.remove('ready');$('serverBadgeText').textContent='게스트 플레이';return false}finally{if(revision===generation)checking=null}})();return checking;
 }
 function renderMode(){
  const queued=net.queued||net.connecting;$('matchSetup').hidden=net.queued;$('queuePanel').hidden=!net.queued;$('onlineJoinBtn').hidden=net.queued;
@@ -74,7 +75,7 @@ class Network extends EventTarget{
    let settled=false;const timer=setTimeout(()=>fail(new Error('온라인 연결 시간이 초과되었습니다. 서버 주소를 확인하세요.')),12000);
    const fail=error=>{if(settled)return;settled=true;clearTimeout(timer);this.abortJoin=null;this.leave();reject(error)};
    this.abortJoin=()=>{if(settled)return;settled=true;clearTimeout(timer);const error=new Error('매칭을 취소했습니다.');error.name='AbortError';reject(error)};
-   ws.on('connect',()=>{if(ws!==this.socket)return;this.send({type:kind==='bot'?'queueBots':kind==='public'?'queue':'join',protocol:3,name,room,map,weapon,teamSize,skinId,token,guestToken});this.pingTimer=setInterval(()=>this.send({type:'ping',time:Date.now()}),2000)});
+   ws.on('connect',()=>{if(ws!==this.socket)return;this.send({type:kind==='bot'?'queueBots':kind==='public'?'queue':'join',protocol:3,catalogVersion:CATALOG_VERSION,name,room,map,weapon,teamSize,skinId,token,guestToken});this.pingTimer=setInterval(()=>this.send({type:'ping',time:Date.now()}),2000)});
    ws.on('packet',message=>{
     if(ws!==this.socket||!message||typeof message!=='object')return;
     if(message.type==='error'){if(!settled)fail(new Error(message.error));else hooks.toast?.(message.error);return}

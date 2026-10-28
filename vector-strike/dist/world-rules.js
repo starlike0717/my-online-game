@@ -1,0 +1,3 @@
+export function groundHeight(world,x,z){if(!world)return 0;let height=-Infinity;for(const r of world.floors||[])if(Math.abs(x-r.x)<=r.w/2&&Math.abs(z-r.z)<=r.d/2)height=Math.max(height,r.y||0);return height}
+export function worldFatal(world,p){if(!world)return false;if(p.y<(world.deathY??-8))return true;if(world.boundary==='kill'&&(Math.abs(p.x)>world.edge||Math.abs(p.z)>world.edge))return true;return world.hazard==='water'&&groundHeight(world,p.x,p.z)===-Infinity&&p.y<-.35}
+export const PRACTICE_WORLD={limit:88,limitX:71.5,limitZ:87.5,boundary:'wall',floors:[{x:0,z:0,w:144,d:176}],deathY:-8};

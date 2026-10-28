@@ -35,9 +35,8 @@ test('all firearm furniture is finite, provides open sight references and stays 
 
 test('weapon families retain recognizable parts instead of a single shared rifle silhouette',()=>{
  const check=(fragment,part)=>{const w=weapons.find(w=>w.name.includes(fragment));assert.ok(w,fragment);const rig=new THREE.Group();addWeaponDetails(THREE,rig,w);assert.ok(named(rig,part),`${w.name}: ${part}`)};
- check('WHISPER','pistol-suppressor');check('PEACEMAKER','revolver-cylinder');check('NOMAD','gas-piston');
- check('P90','top-feed-magazine');check('DB-2','double-barrel');check('M870','pump-forend-rib');check('M249','linked-cartridge');check('OBLIVION','single-shot-chamber');
- for(const id of [50,51]){const rig=new THREE.Group();addWeaponDetails(THREE,rig,weapons[id]);assertFiniteModel(rig,weapons[id].name)}
+ check('권총','pistol-suppressor');check('산탄총','pump-forend-rib');check('경기관총','linked-cartridge');check('저격소총','single-shot-chamber');
+ for(const id of [6,7]){const rig=new THREE.Group();addWeaponDetails(THREE,rig,weapons[id]);assertFiniteModel(rig,weapons[id].name)}
 });
 
 test('single-shot and repeating crossbows have wide limbs, taut strings, a visible bolt and finite details',()=>{

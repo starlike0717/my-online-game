@@ -6,10 +6,10 @@ import { damageForHit,rayActor,shotDirections,spreadForShot } from '../dist/comb
 import { Arena } from '../server/arena.mjs';
 const direction=(x,y,z)=>{const len=Math.hypot(x,y,z);return [x/len,y/len,z/len]};
 test('every weapon has valid body/head and distance profiles; examples have distinct damage',()=>{
- assert.equal(weapons.length,75);
+ assert.equal(weapons.length,36);
  for(const w of weapons){assert.ok(w.damage>0&&w.headMultiplier>=1&&w.rangeEnd>w.rangeStart);assert.equal(damageForHit(w,false,0),w.damage);assert.equal(damageForHit(w,true,0),Math.round(w.damage*w.headMultiplier*10)/10);assert.equal(damageForHit(w,false,500),Math.round(w.damage*w.minDamage*10)/10);assert.ok(damageForHit(w,false,(w.rangeStart+w.rangeEnd)/2)<=w.damage)}
- assert.deepEqual([weapons[0].damage,weapons[4].damage,weapons[28].damage],[26,34,95]);
- assert.deepEqual([damageForHit(weapons[0],true),damageForHit(weapons[4],true),damageForHit(weapons[28],true)],[46.8,56.1,190]);
+ assert.deepEqual([weapons[0].damage,weapons[3].damage,weapons[5].damage],[26,240,30]);
+ assert.deepEqual([damageForHit(weapons[0],true),damageForHit(weapons[3],true),damageForHit(weapons[5],true)],[46.8,312,57]);
 });
 test('head includes visor/helmet sides and scales while crouching; weapon and space above miss',()=>{
  const p={x:0,y:0,z:0,height:1.7,yaw:0};
@@ -24,15 +24,15 @@ test('head includes visor/helmet sides and scales while crouching; weapon and sp
 });
 test('ADS/crouch reduce spread; movement/air increase it; pellets stay normalized',()=>{
  const w=weapons[0],still=spreadForShot(w);assert.ok(spreadForShot(w,{aim:true})<still);assert.ok(spreadForShot(w,{crouched:true})<still);assert.ok(spreadForShot(w,{grounded:false,speed:9})>still);
- const shotgun=weapons[24],rays=shotDirections([0,0,-1],shotgun,{aim:true});assert.equal(rays.length,shotgun.pellets);for(const d of rays)assert.ok(Math.abs(Math.hypot(...d)-1)<1e-12);
+ const shotgun=weapons[2],rays=shotDirections([0,0,-1],shotgun,{aim:true});assert.equal(rays.length,shotgun.pellets);for(const d of rays)assert.ok(Math.abs(Math.hypot(...d)-1)<1e-12);
 });
 function fixture(weapon=0){let now=10000;const arena=new Arena('DAMAGE',0,()=>now,{random:()=>0}),a=arena.join('A',weapon),b=arena.join('B');arena.blocks=[];Object.assign(a,{x:0,y:0,z:18,height:1.7});Object.assign(b,{x:0,y:0,z:10});now+=3000;return{arena,a,b,advance:ms=>now+=ms}}
 test('server body and head damage equal the practice formula, including falloff and actual health',()=>{
- for(const weapon of [0,4,10,28,42])for(const head of [false,true])for(const range of [8,80]){
+ for(const weapon of [0,1,3,4,5])for(const head of [false,true])for(const range of [8,80]){
   const{arena,a,b}=fixture(weapon);b.z=a.z-range;const height=head?2:1.35;const d=direction(0,height-1.7,-range);arena.shoot(a.id,d,{aim:true});const hit=arena.events.find(e=>e.type==='hit');assert.ok(hit);assert.equal(hit.head,head);assert.equal(hit.damage,damageForHit(weapons[weapon],head,hit.distance));assert.equal(hit.health,Math.ceil(Math.max(0,MAX_HEALTH-hit.damage)));assert.equal(hit.actualDamage,Math.min(MAX_HEALTH,hit.damage));
  }
 });
 test('shotgun resolves each pellet and reports total damage once; cover still wins',()=>{
- const{arena,a,b,advance}=fixture(20),w=weapons[20];arena.shoot(a.id,direction(0,-.35,-8));let hits=arena.events.filter(e=>e.type==='hit');assert.equal(hits.length,1);assert.equal(hits[0].damage,Math.round(damageForHit(w,false,hits[0].distance)*w.pellets*10)/10);
+ const{arena,a,b,advance}=fixture(2),w=weapons[2];arena.shoot(a.id,direction(0,-.35,-8));let hits=arena.events.filter(e=>e.type==='hit');assert.equal(hits.length,1);assert.equal(hits[0].damage,Math.round(damageForHit(w,false,hits[0].distance)*w.pellets*10)/10);
  advance(4000);arena.tick();Object.assign(b,{x:0,y:0,z:10,health:MAX_HEALTH,invulnerableUntil:0});arena.blocks=[{min:[-2,0,12],max:[2,4,13]}];arena.events=[];arena.shoot(a.id,direction(0,-.35,-8));assert.equal(b.health,MAX_HEALTH);assert.equal(arena.events.some(e=>e.type==='hit'),false);
 });

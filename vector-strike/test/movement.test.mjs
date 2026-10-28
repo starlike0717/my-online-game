@@ -9,7 +9,7 @@ const speed=p=>Math.hypot(p.vel.x,p.vel.z);
 test('ground input responds quickly, stops smoothly, and diagonal movement has no speed advantage',()=>{
  const p=player();run(p,.2,{forward:1});assert.ok(speed(p)>5.4&&speed(p)<5.8);run(p,.35,{});assert.ok(speed(p)<.1);
  const forward=run(player(),1,{forward:1}),diagonal=run(player(),1,{forward:1,right:1});assert.ok(Math.abs(speed(forward)-speed(diagonal))<.001);
- assert.ok(speed(run(player(),1,{forward:1,sprint:true},weapons[52]))>speed(run(player(),1,{forward:1,sprint:true},weapons[51])));
+ assert.ok(speed(run(player(),1,{forward:1,sprint:true},weapons[10]))>speed(run(player(),1,{forward:1,sprint:true},weapons[7])));
 });
 test('slide jump keeps momentum, can steer, and cannot spam the slide cooldown',()=>{
  const p=run(player(),.4,{forward:1,sprint:true});assert.equal(startSlide(p),true);assert.equal(startSlide(p),false);run(p,.15,{forward:1,right:.5});assert.ok(p.vel.x>0);const initial=speed(p);p.jumpBuffer=.14;advanceMovement(p,{forward:1,sprint:true},weapons[0],[],1/120);assert.equal(p.grounded,false);assert.equal(p.slide,0);run(p,.15,{});assert.ok(speed(p)>initial*.9);assert.ok(p.pos.y>1);

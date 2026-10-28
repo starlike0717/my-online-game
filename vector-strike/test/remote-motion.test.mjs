@@ -1,3 +1,4 @@
+import {clientGlobals} from './runtime-fixture.mjs';
 import {MAX_HEALTH} from '../dist/combat.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -9,7 +10,7 @@ function extract(name){const start=source.indexOf('function '+name+'('),end=sour
 const body=['syncRemoteSpawn','updateRemoteAgents'].map(extract).join('\n');
 function fixture(){
  const mesh=new THREE.Group();mesh.userData.legs=[new THREE.Group(),new THREE.Group()];const actor={mesh,phase:1,team:1,wasAlive:true},p={id:'other',x:0,y:0,z:0,yaw:0,height:1.7,health:MAX_HEALTH},agents=new Map([['other',actor]]),players=new Map([['other',p]]);
- const c=vm.createContext({MAX_HEALTH,THREE,weapons:[],animateAgent(){},remoteAgents:agents,net:{players},onlineDead:false,paused:false,exp:(v,goal,speed,dt)=>v+(goal-v)*(1-Math.exp(-speed*dt)),removeRemote:id=>agents.delete(id)});new vm.Script(body).runInContext(c);return{mesh,actor,p,players,agents,spawn(m){c.syncRemoteSpawn({id:'other',y:0,yaw:0,...m})},step(dt=1/60){c.updateRemoteAgents(dt)}};
+ const c=vm.createContext({...clientGlobals(),MAX_HEALTH,THREE,weapons:[],animateAgent(){},remoteAgents:agents,net:{players},onlineDead:false,paused:false,exp:(v,goal,speed,dt)=>v+(goal-v)*(1-Math.exp(-speed*dt)),removeRemote:id=>agents.delete(id)});new vm.Script(body).runInContext(c);return{mesh,actor,p,players,agents,spawn(m){c.syncRemoteSpawn({id:'other',y:0,yaw:0,...m})},step(dt=1/60){c.updateRemoteAgents(dt)}};
 }
 test('a remote respawn appears at its new position immediately instead of flying from the death location',()=>{
  const f=fixture();f.mesh.scale.y=.65;f.mesh.userData.legs[0].rotation.x=.8;f.p.health=0;f.step();assert.equal(f.mesh.visible,false);Object.assign(f.p,{health:MAX_HEALTH,x:20,z:-20,yaw:.7});f.step();assert.equal(f.mesh.visible,true);assert.deepEqual(f.mesh.position.toArray(),[20,0,-20]);assert.equal(f.mesh.rotation.y,.7+Math.PI);assert.equal(f.mesh.scale.y,1);assert.equal(f.mesh.userData.legs[0].rotation.x,0);

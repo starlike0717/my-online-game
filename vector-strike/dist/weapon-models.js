@@ -102,7 +102,7 @@ export function addWeaponDetails(THREE,rig,w){
    tube(THREE,details,'revolver-cylinder',steel,0,-.005,.06,.12,.17,'z',12);
    for(let i=0;i<6;i++){const a=i*Math.PI/3;const chamber=tube(THREE,details,'revolver-chamber',dark,Math.cos(a)*.077,Math.sin(a)*.077,.148,.023,.006,'z',8);chamber.material=material(THREE,dark)}
    box(THREE,details,'revolver-hammer',steel,0,.101,.205,.032,.095,.052).rotation.x=.25;
-  }else if(/WHISPER/.test(w.name)){
+  }else if(/WHISPER/.test(w.name)||w.cat==='hg'){
    tube(THREE,details,'pistol-suppressor',metal,0,.02,barrelEnd-.095,.042,.23,'z',12);
    for(const z of [barrelEnd+.01,barrelEnd-.19])ring(THREE,details,'suppressor-collar',steel,0,.02,z,.043,.005);
   }else if(/DE-50/.test(w.name)){

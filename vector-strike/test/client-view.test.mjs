@@ -1,3 +1,4 @@
+import {clientGlobals} from './runtime-fixture.mjs';
 import {addViewArms,updateViewArms,articulateAgent,poseAgentRig} from '../dist/rigging.js';
 import test from 'node:test';
 import assert from 'node:assert/strict';
@@ -17,7 +18,7 @@ const source=await readFile(new URL('../dist/game.js',import.meta.url),'utf8');
 function body(name){const start=source.indexOf('function '+name+'(');assert.ok(start>=0,name);const next=source.slice(start+1).search(/\n(?:async )?function /);return source.slice(start,next<0?source.length:start+1+next)}
 function fixture(id=0){
  const elements=new Map(),element=()=>({hidden:true,textContent:'',style:{setProperty(){}},classList:{values:new Map(),toggle(key,value){this.values.set(key,value)}},querySelector(){return this.child??=element()}});
- const c=vm.createContext({THREE,addViewArms,updateViewArms,articulateAgent,poseAgentRig,weapons,addWeaponDetails,makeCrossbow,weaponActionPose,agentActionPose,cameraPosition,showViewWeapon,weaponViewPose,aimCameraPosition,zoomFov,advanceMovement,spreadForShot,
+ const c=vm.createContext({...clientGlobals(),THREE,addViewArms,updateViewArms,articulateAgent,poseAgentRig,weapons,addWeaponDetails,makeCrossbow,weaponActionPose,agentActionPose,cameraPosition,showViewWeapon,weaponViewPose,aimCameraPosition,zoomFov,advanceMovement,spreadForShot,
   selectedWeapon:id,weaponRig:null,weaponParts:{},viewScene:new THREE.Scene(),scene:new THREE.Scene(),camera:new THREE.PerspectiveCamera(85,16/9,.08,240),viewCamera:new THREE.PerspectiveCamera(70,16/9,.02,10),matCache:new Map(),
   magazineInventory:new Map(),reserveInventory:new Map(),rigWeapon:null,muzzle:null,muzzleLight:null,ammo:0,reserveAmmo:0,pendingEquip:0,pendingReload:0,actionSeq:0,aim:false,reloading:0,shotCooldown:0,weaponSwitch:0,combat:false,mode:'bots',
   player:{pos:new THREE.Vector3(),vel:new THREE.Vector3(),yaw:0,pitch:0,height:1.7,health:200,grounded:true,jumps:0,slide:0,slideCooldown:0,slideDir:new THREE.Vector3(),dash:0,dashCooldown:0,dashSpeed:0,speed:0,bob:0,land:0,stepOffset:0,coyote:.1,jumpBuffer:0},
@@ -72,8 +73,8 @@ test('actual first-person client ADS keeps full gun models, open aligned sights,
 });
 
 test('bow drawing keeps the drawing hand attached to the moving string instead of resetting its pose',()=>{
- const c=fixture(50);c.drawing=true;c.step();
- const charge=.425/weapons[50].chargeTime,base=c.weaponParts.rest.drawHand;
+ const c=fixture(6);c.drawing=true;c.step();
+ const charge=.425/weapons[6].chargeTime,base=c.weaponParts.rest.drawHand;
  near(c.weaponParts.drawHand.position.z,base.p[2]+charge*.35);
  near(c.weaponParts.arrow.position.z,charge*.3);
  near(c.weaponParts.string.geometry.attributes.position.getZ(1),.12+charge*.35,1e-6);
@@ -91,14 +92,14 @@ test('crossbow bolts settle into their rail before reload finishes and do not sn
 });
 
 test('third-person ADS reaches the exact eye and preserves yaw/pitch orientation without shoulder parallax',()=>{
- const c=fixture(42);c.player.pos.set(5,0,9);c.player.yaw=Math.PI*8+.7;c.player.pitch=-.2;c.viewMode='third';c.aim=true;c.motion.ads=1;c.step();
+ const c=fixture(5);c.player.pos.set(5,0,9);c.player.yaw=Math.PI*8+.7;c.player.pitch=-.2;c.viewMode='third';c.aim=true;c.motion.ads=1;c.step();
  const eye=c.player.pos.clone().add(new THREE.Vector3(0,c.player.height,0));assert.ok(c.camera.position.distanceTo(eye)<1e-10);
  const expected=new THREE.Quaternion().setFromEuler(new THREE.Euler(c.player.pitch,c.player.yaw,0,'YXZ'));assert.ok(c.camera.quaternion.angleTo(expected)<1e-7);
  c.dispose();
 });
 
 test('frame dispatch includes the weapon view rig during ADS in both camera modes and hides it on death',()=>{
- const c=fixture(42),dispatch=[];
+ const c=fixture(5),dispatch=[];
  c.combat=true;c.paused=true;c.renderer={clearDepth(){},render(scene){dispatch.push({view:scene===c.viewScene,visible:c.weaponRig.visible})}};
  for(const viewMode of ['first','third']){c.viewMode=viewMode;c.motion.ads=1;c.frame(1000);assert.equal(dispatch.at(-1).view,true);assert.equal(dispatch.at(-1).visible,true)}
  c.onlineDead=true;c.frame(1016);assert.equal(dispatch.at(-1).visible,false);

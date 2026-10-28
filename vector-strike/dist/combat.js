@@ -4,7 +4,7 @@ export const BOT_MAX_HEALTH=100;
 const clamp=(n,a,b)=>Math.max(a,Math.min(b,n));
 export function damageForHit(weapon,head=false,distance=0){
  const t=clamp((Math.max(0,distance)-weapon.rangeStart)/(weapon.rangeEnd-weapon.rangeStart),0,1);
- return Math.round(weapon.damage*(head?weapon.headMultiplier:1)*(1-t*(1-weapon.minDamage))*10)/10;
+ return Math.round(weapon.damage*(head&&weapon.mechanic!=='melee'?weapon.headMultiplier:1)*(1-t*(1-weapon.minDamage))*10)/10;
 }
 export function spreadForShot(w,{aim=false,grounded=true,speed=0,crouched=false}={}){
  return w.spread*(aim?(w.cat==='sg'?.75:.16):1)*(grounded?1:1.9)*(1+clamp(speed/10,0,1)*.6)*(crouched&&grounded?.8:1);

@@ -1,3 +1,4 @@
+import {clientGlobals} from './runtime-fixture.mjs';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {readFile} from 'node:fs/promises';
@@ -6,7 +7,7 @@ import {mouseLookDelta,edgeLookDelta,resetMouseLook,leaveMouseLook,requestMouseL
 const source=await readFile(new URL('../dist/game.js',import.meta.url),'utf8');
 function body(name){const a=source.indexOf('function '+name+'('),b=source.indexOf('\nfunction ',a+1);return source.slice(a,b)}
 test('actual fallback camera follows passive mouse movement without a pressed button',()=>{
- const canvas={},document={pointerLockElement:null},c=vm.createContext({combat:true,paused:false,isTouch:false,pointerFallback:true,document,mouse:{down:false,dx:0,dy:0,position:null},player:{yaw:0,pitch:0},settings:{sensitivity:1},aim:false,$:()=>canvas,clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),mouseLookDelta,resetMouseLook});new vm.Script(['handleMouseLook','applyMouseLook'].map(body).join('\n')).runInContext(c);
+ const canvas={},document={pointerLockElement:null},c=vm.createContext({...clientGlobals(),combat:true,paused:false,isTouch:false,pointerFallback:true,document,mouse:{down:false,dx:0,dy:0,position:null},player:{yaw:0,pitch:0},settings:{sensitivity:1},aim:false,$:()=>canvas,clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),mouseLookDelta,resetMouseLook});new vm.Script(['handleMouseLook','applyMouseLook'].map(body).join('\n')).runInContext(c);
  const move=(x,y)=>c.handleMouseLook({clientX:x,clientY:y,target:canvas});move(200,200);assert.equal(c.player.yaw,0);move(300,250);assert.equal(c.mouse.down,false);assert.equal(c.player.yaw,-.2);assert.equal(c.player.pitch,-.1);
  c.handleMouseLook({clientX:700,clientY:700,target:{}});move(200,200);assert.equal(c.player.yaw,-.2);c.paused=true;move(400,400);assert.equal(c.player.yaw,-.2);
 });
@@ -27,7 +28,7 @@ test('reaching the viewport edge keeps rotation going and re-entry does not snap
 
 function cursorFixture(request){
  const classes=new Set(),elements=new Map(),events=new EventTarget(),document={pointerLockElement:null,addEventListener:events.addEventListener.bind(events),removeEventListener:events.removeEventListener.bind(events),body:{classList:{toggle(name,enabled){if(enabled)classes.add(name);else classes.delete(name)}}},exitPointerLock(){this.pointerLockElement=null}};const canvas={requestPointerLock(){return request?.(document,canvas)}};
- const c=vm.createContext({document,combat:true,paused:false,state:'playing',isTouch:false,pointerFallback:false,pointerLockPending:false,pointerHintShown:false,mouse:{down:false,position:null},keys:new Set(),aim:false,shotCooldown:0,cancelDraw(){},toast(){},syncAudioScene(){},requestMouseLock,resetMouseLook,$:(id)=>{if(id==='world')return canvas;if(!elements.has(id))elements.set(id,{hidden:false});return elements.get(id)}});
+ const c=vm.createContext({...clientGlobals(),document,combat:true,paused:false,state:'playing',isTouch:false,pointerFallback:false,pointerLockPending:false,pointerHintShown:false,mouse:{down:false,position:null},keys:new Set(),aim:false,shotCooldown:0,cancelDraw(){},toast(){},syncAudioScene(){},requestMouseLock,resetMouseLook,$:(id)=>{if(id==='world')return canvas;if(!elements.has(id))elements.set(id,{hidden:false});return elements.get(id)}});
  new vm.Script(['syncMouseMode','enablePointerFallback','handlePointerLockChange','lockPointer','pause','resume'].map(body).join('\n')).runInContext(c);return{c,classes,document,canvas};
 }
 test('gameplay hides the cursor while Escape pause restores menus and pointer-lock exit keeps combat active',async()=>{
@@ -50,7 +51,7 @@ test('denied or unavailable capture returns to fallback without remaining pendin
  const legacy=captureFixture(({events})=>{queueMicrotask(()=>events.dispatchEvent(new Event('pointerlockerror')))});assert.equal(await requestMouseLock(legacy.canvas,legacy.doc),false);
 });
 test('relative mouse input crosses multiple revolutions in both view modes without a screen-edge clamp',()=>{
- for(const viewMode of ['first','third']){const canvas={},c=vm.createContext({viewMode,combat:true,paused:false,isTouch:false,pointerFallback:false,document:{pointerLockElement:canvas},mouse:{dx:0,dy:0,position:null},player:{yaw:0,pitch:0},settings:{sensitivity:1},aim:false,$:()=>canvas,clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),mouseLookDelta,resetMouseLook});new vm.Script(['handleMouseLook','applyMouseLook'].map(body).join('\n')).runInContext(c);for(let n=0;n<1000;n++)c.handleMouseLook({movementX:20,movementY:0,clientX:500,clientY:400});assert.ok(c.player.yaw<-Math.PI*6);assert.ok(Math.abs(c.player.yaw+40)<1e-9);assert.equal(c.player.pitch,0);for(let n=0;n<1000;n++)c.handleMouseLook({movementX:-20,movementY:0,clientX:500,clientY:400});assert.ok(Math.abs(c.player.yaw)<1e-9)}
+ for(const viewMode of ['first','third']){const canvas={},c=vm.createContext({...clientGlobals(),viewMode,combat:true,paused:false,isTouch:false,pointerFallback:false,document:{pointerLockElement:canvas},mouse:{dx:0,dy:0,position:null},player:{yaw:0,pitch:0},settings:{sensitivity:1},aim:false,$:()=>canvas,clamp:(n,a,b)=>Math.max(a,Math.min(b,n)),mouseLookDelta,resetMouseLook});new vm.Script(['handleMouseLook','applyMouseLook'].map(body).join('\n')).runInContext(c);for(let n=0;n<1000;n++)c.handleMouseLook({movementX:20,movementY:0,clientX:500,clientY:400});assert.ok(c.player.yaw<-Math.PI*6);assert.ok(Math.abs(c.player.yaw+40)<1e-9);assert.equal(c.player.pitch,0);for(let n=0;n<1000;n++)c.handleMouseLook({movementX:-20,movementY:0,clientX:500,clientY:400});assert.ok(Math.abs(c.player.yaw)<1e-9)}
 });
 test('starting a round requests capture before constructing the map, and only Escape pauses combat',()=>{
  const start=body('startGame');assert.ok(start.indexOf('lockPointer()')<start.indexOf('buildMap('));assert.ok(!body('handlePointerLockChange').includes('pause()'));assert.ok(!body('enablePointerFallback').includes('pause()'));

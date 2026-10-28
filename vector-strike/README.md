@@ -1,13 +1,13 @@
 # VECTOR — 기동 · 석궁 · 전장 · 조준 업데이트
 
-로그인 없이 플레이하는 10개 맵 / 75종 무기의 3D FPS입니다. 선택형 계정, AI 봇 연습장, Node.js + Socket.IO 온라인 데스매치를 지원합니다.
+로그인 없이 플레이하는 10개 맵 / 36종 무기의 3D FPS입니다. 선택형 계정, AI 봇 연습장, Node.js + Socket.IO 온라인 데스매치를 지원합니다.
 
 ## 1. HTML 파일로 바로 플레이
 
 `dist/vector-offline.html`을 더블클릭해 여세요. 모든 3D 엔진·게임 코드·스타일이 한 HTML 파일에 포함되어 있습니다. 서버, npm, 인터넷 없이 건설 현장/전장/협곡 대교/개방 사격장에서 플레이할 수 있습니다. 폴더째 보관했다면 `dist/index.html`도 직접 열 수 있습니다.
 
 - AI 봇 연습장: 움직이며 공격하는 봇 3/6/8/12기, 쉬움/보통/어려움, 무적 켜기/끄기, 처치 후 자동 재생성.
-- 고정 표적 사격장: 조준·반동·75종 무기 시험.
+- 고정 표적 사격장: 조준·반동·36종 무기 시험.
 - 10개 전장과 고지대 전투 루트, 스프링 야드의 트램펄린 점프 패드.
 - 근접 무기 20종마다 우클릭 또는 E로 쓰는 활성 특수 능력과 모바일 특수 버튼.
 - 로비 오른쪽 훈련 로봇을 더블 클릭하면 안내 없이 비밀 훈련장으로 입장.
@@ -166,3 +166,12 @@ The ten arenas include High Citadel, Skyline rooftops, Red Mesa, Iron Foundry, G
 
 ### 걸어서 들어가는 훈련장
 로봇의 비밀 공간에 입장한 뒤 초록색 **봇 훈련장** 문 또는 빨간색 **표적 사격장** 문 안으로 걸어 들어가세요. 봇 훈련장은 색깔별 고정 봇 15기와 거리별 단상, 표적 사격장은 높이·거리가 다른 공중 원형 표적 9개를 갖춥니다. 봇·표적은 체력 100이며 처치 후 3초 뒤 원래 위치에 복원됩니다. 각 훈련장 뒤쪽 **로비로 돌아가기** 문을 걸어 통과하면 3D 로비로 돌아갑니다. 이동 시 체력과 탄약을 보충하며, 듀얼 패드는 3D 로비 오른쪽에 있습니다.
+
+
+### v22 controls and arenas
+- Mobile: landscape layout, icon buttons, aim toggle and slide start/stop toggle. Rotate the phone if the browser cannot lock orientation.
+- Sniper: single-round magazine, immediate trigger and reload after firing.
+- The hidden robot entrance leads to the atrium; walk through the training gate for a 144 × 176 m two-story range with bots and floating one-hit targets. Trampolines reach the upper floor; stations respawn after three seconds.
+- Ten structurally different maps include enclosed arenas, fatal perimeter boundaries, water and void gaps with accessible outer platforms.
+- 36 uniquely named weapons, including six fantasy weapons and twenty active-ability melee weapons. Old purchases migrate with catalogue version 2.
+- Melee: right-click / E activates the equipped ability. The HUD shows cooldown. Reflect, cover placement (8 seconds), directional dash, dash attack, backstab, slam and temporary triple jump are also checked by the online server.

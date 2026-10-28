@@ -121,3 +121,28 @@ weapons.push(
  {...weapons[50],id:73,name:'석궁',ko:'컴파운드 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:82,headMultiplier:1.9,rate:1.05,mag:1,reserve:18,reload:1.45,speed:1.05,projectileSpeed:88,gravity:2.2,rangeStart:35,rangeEnd:100,minDamage:.75,color:0x91a89c},
  {...weapons[50],id:74,name:'연발 석궁',ko:'연발 석궁',cat:'crossbow',mechanic:'bolt',crossbow:true,damage:48,headMultiplier:1.7,rate:2.2,mag:4,reserve:28,reload:2.1,speed:1,projectileSpeed:74,gravity:2.8,rangeStart:25,rangeEnd:85,minDamage:.7,color:0x9a967d}
 );
+
+// Catalogue v2 has one physical weapon per type. Legacy purchases map to their replacement.
+export const CATALOG_VERSION=2;
+const legacyWeapons=weapons.slice();
+const selectedRanged=[0,10,20,72,36,42,50,51,73].map(id=>({...legacyWeapons[id],legacyId:id}));
+selectedRanged[3]={...selectedRanged[3],name:'저격소총',mag:1,reserve:20,reload:1.6,rate:2,adsTime:.18};
+categories.push({id:'burst',name:'점사소총',en:'BURST RIFLE'});
+const burst={...legacyWeapons[6],name:'점사소총',cat:'burst',legacyId:6,burst:3,auto:false,rate:12,mag:24,reserve:120};
+const blades=legacyWeapons.filter(w=>w.mechanic==='melee').map(w=>({...w,legacyId:w.id,headMultiplier:1,backstab:false,extraJumps:0}));
+const skills={knife:{kind:'backstab',title:'후면 처형',cooldown:7},curved:{kind:'dashAttack',title:'돌진 베기',cooldown:6},sword:{kind:'reflect',title:'반격 방어',cooldown:9,duration:2},rapier:{kind:'dashAttack',title:'관통 돌진',cooldown:6},axe:{kind:'slam',title:'내려찍기',cooldown:8},halberd:{kind:'slam',title:'충격 강타',cooldown:9},hammer:{kind:'block',title:'엄폐 블록 설치',cooldown:10},bat:{kind:'dash',title:'회피 대시',cooldown:5},spear:{kind:'dashAttack',title:'돌진 찌르기',cooldown:7},trident:{kind:'skyDash',title:'상승 대시',cooldown:7},staff:{kind:'tripleJump',title:'3초 3단 점프',cooldown:9},scythe:{kind:'reflect',title:'공격 반사',cooldown:10,duration:2.5},crowbar:{kind:'block',title:'방벽 조립',cooldown:9}};
+blades.forEach(w=>{w.ability={...skills[w.shape]};w.perk={kind:'active',title:w.ability.title,backMultiplier:1.5};w.backMultiplier=1.5});
+const fantasyBase={...legacyWeapons[0],cat:'fantasy',legacyId:null,fantasy:true,headMultiplier:1.5,mag:20,reserve:100,reload:1.5,color:0x9a7fdb};
+categories.push({id:'fantasy',name:'상상 속 무기',en:'FANTASY ARMS'});
+const fantasies=[
+ {...fantasyBase,name:'레이저 소총',damage:36,rate:8,spread:.001,color:0x66e5eb,beam:0x66faff},
+ {...fantasyBase,name:'플라스마 발사기',mechanic:'bolt',projectileSpeed:48,gravity:0,damage:65,rate:2.5,mag:6,reserve:36,color:0xb779ed},
+ {...fantasyBase,name:'빙결 완드',mechanic:'bolt',projectileSpeed:54,gravity:0,damage:42,rate:3,mag:8,reserve:48,color:0x8be2fa,freeze:.6},
+ {...fantasyBase,name:'중력포',mechanic:'rocket',projectileSpeed:25,gravity:0,blastRadius:6,splashDamage:75,damage:105,mag:1,reserve:10,rate:1,reload:2,color:0x9064c9},
+ {...fantasyBase,name:'별빛 활',mechanic:'arrow',chargeTime:.6,projectileSpeed:80,gravity:1,damage:110,mag:1,reserve:30,rate:2,reload:.5,color:0xf1cf65},
+ {...fantasyBase,name:'전기 산탄포',damage:20,pellets:5,spread:.055,mag:5,reserve:40,rate:1.6,color:0x86d89b}
+];
+weapons.splice(0,weapons.length,...selectedRanged,burst,...blades,...fantasies);weapons.forEach((w,id)=>{w.id=id;delete w.names});
+export const starterWeaponIds=[0,5,10];
+const legacyMap=new Map(weapons.filter(w=>w.legacyId!==null).map(w=>[w.legacyId,w.id]));
+export function migrateWeaponId(id){if(legacyMap.has(id))return legacyMap.get(id);const old=legacyWeapons[id];return old?weapons.find(w=>w.cat===old.cat)?.id??0:0}

@@ -31,8 +31,8 @@ test('bows, crossbows, launchers, shotguns, and melee use appropriate reload ges
  assert.equal(launcher.reload.style,'rocket');close(launcher.reload.magOut);assert.ok(launcher.supportHand[2]<-.3);
  assert.equal(weaponActionPose(melee,{reloadProgress:.5}).reload.style,'none');
  for(const n of numericLeaves(weaponActionPose(melee,{reloadProgress:.5})))close(n);
- const crossbows=weapons.filter(w=>w.crossbow);assert.equal(crossbows.length,2);
- const single=crossbows.find(w=>w.mag===1),repeater=crossbows.find(w=>w.mag>1);
+ const crossbows=weapons.filter(w=>w.crossbow);assert.equal(crossbows.length,1);
+ const single=crossbows.find(w=>w.mag===1),repeater={...single,mag:4};
  assert.equal(weaponActionPose(single,{reloadProgress:.4}).reload.style,'nock');
  assert.ok(weaponActionPose(single,{reloadProgress:.4}).bolt>.18);
  assert.equal(weaponActionPose(repeater,{reloadProgress:.4}).reload.style,'magazine');
@@ -40,7 +40,7 @@ test('bows, crossbows, launchers, shotguns, and melee use appropriate reload ges
 });
 
 test('reload and melee phases are continuous and return smoothly at both endpoints',()=>{
- for(const weapon of [weapons[0],weapons[50],weapons[51],...weapons.filter(w=>w.crossbow),...weapons.filter(w=>w.mechanic==='melee')]){
+ for(const weapon of [weapons[0],weapons[6],weapons[7],...weapons.filter(w=>w.crossbow),...weapons.filter(w=>w.mechanic==='melee')]){
   let previous=null;
   for(let i=0;i<=1000;i++){
    const p=i/1000,pose=weaponActionPose(weapon,{reloadProgress:p,attackProgress:p}),values=numericLeaves(pose);

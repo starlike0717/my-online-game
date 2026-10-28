@@ -1,20 +1,20 @@
 export const hubAreaInfo={
- atrium:{title:'VECTOR ATRIUM',ko:'3D 로비',hint:'초록 문: 봇 훈련장 · 빨간 문: 표적 사격장 · 오른쪽: 듀얼 패드'},
- bots:{title:'BOT TRAINING',ko:'봇 훈련장',hint:'색깔별 고정 봇 · 체력 100 · 처치 3초 후 같은 자리에서 부활'},
- targets:{title:'TARGET GALLERY',ko:'표적 사격장',hint:'높이와 거리가 다른 공중 표적 · 중앙 명중 보너스 · 3초 후 복원'}
+ atrium:{title:'VECTOR ATRIUM',ko:'3D 로비',hint:'왼쪽 훈련장 문 · 오른쪽 듀얼 패드'},
+ practice:{title:'TRAINING HANGAR',ko:'통합 연습장',hint:'봇과 공중 표적 · 트램펄린으로 2층 이동 · 표적은 한 번 적중 시 파괴 · 3초 후 부활'}
 };
-export const hubGates=[{id:'bots',destination:'bots',x:-18,z:-21,width:6,color:0x6be6a3,title:'봇 훈련장'},{id:'targets',destination:'targets',x:-7,z:-21,width:6,color:0xff7568,title:'표적 사격장'}];
+export const hubGates=[{id:'practice',destination:'practice',x:-15,z:-21,width:8,color:0x6be6a3,title:'통합 연습장'}];
 const colors=[0xe84948,0xf0c541,0x3e9fea,0xac62e5,0x68d682];
 export const hubStations=[
- ...[7,-5,-17].flatMap((z,row)=>[-18,-9,0,9,18].map((x,col)=>({id:`bot-${row}-${col}`,area:'bots',x:x+(row===1?2:0),y:.16*(row+1),z,color:colors[(col+row)%colors.length],distance:18-z}))),
- ...[[-10,6,2],[10,6,1],[-17,-4,1],[0,-4,2.8],[17,-4,.6],[-18,-17,2.4],[-6,-17,1.2],[6,-17,3.4],[18,-17,1.8]].map(([x,z,y],i)=>({id:`target-${i}`,area:'targets',x,y,z,target:true,suspended:true,distance:18-z}))
+ ...[20,-10,-45,-68].flatMap((z,row)=>[-54,-27,0,27,54].map((x,col)=>({id:`bot-${row}-${col}`,area:'practice',x,y:0,z,color:colors[(col+row)%5],distance:65-z}))),
+ ...[-55,-25,12].flatMap((z,row)=>[-48,48].map((x,col)=>({id:`upper-bot-${row}-${col}`,area:'practice',x,y:8.4,z,color:colors[(col+row)%5],distance:65-z}))),
+ ...[[-12,40,.2],[12,40,.2],[-18,4,2],[18,4,3],[0,-25,4],[-15,-60,1],[15,-60,6],[-60,-10,10],[60,-10,11],[-40,-62,9],[40,-62,9],[-48,25,8.6],[48,25,8.6]].map(([x,z,y],i)=>({id:`target-${i}`,area:'practice',x,y,z,target:true,suspended:true,distance:65-z}))
 ];
 export const stationsForArea=area=>hubStations.filter(s=>s.area===area);
 export const duelPads=[1,2,3].flatMap((size,i)=>[0,1].map(side=>({id:`duel-${size}-${side}`,size,x:10+side*9,z:9-i*11,radius:2.15})));
-export function hubSpawn(area='atrium',from=null){if(area==='atrium'&&hubGates.some(g=>g.id===from)){const g=hubGates.find(g=>g.id===from);return{x:g.x,y:0,z:-16,yaw:Math.PI}}return{x:0,y:0,z:18,yaw:0}}
+export function hubSpawn(area='atrium',from=null){if(area==='atrium'&&hubGates.some(g=>g.id===from)){const g=hubGates.find(g=>g.id===from);return{x:g.x,y:0,z:-16,yaw:Math.PI}}return{x:0,y:0,z:area==='practice'?65:18,yaw:0}}
 export function hubZone(position,area='atrium'){
  if(position.y>1.4||position.y<-.5)return null;
- if(area!=='atrium')return Math.abs(position.x)<2.8&&position.z>22&&position.z<26.6?{type:'travel',id:'return-atrium',destination:'atrium'}:null;
+ if(area!=='atrium')return Math.abs(position.x)<2.8&&position.z>79&&position.z<86?{type:'travel',id:'return-atrium',destination:'atrium'}:null;
  if(Math.abs(position.x)<2.5&&position.z>23)return{type:'exit',id:'exit'};
  const gate=hubGates.find(g=>Math.abs(position.x-g.x)<g.width/2-.3&&Math.abs(position.z-g.z)<1.35);if(gate)return{type:'travel',...gate};
  const pad=duelPads.find(p=>Math.hypot(position.x-p.x,position.z-p.z)<p.radius);return pad?{type:'duel',...pad}:null;
@@ -30,21 +30,25 @@ export function buildHub(THREE,group,{box,cylinder,wallText,mat},area='atrium'){
   for(const pad of duelPads){const color=pad.id.endsWith('0')?0x67c9ee:0xffa575;const disk=cylinder(group,pad.x,.045,pad.z,pad.radius,pad.radius,.08,color,40);disk.name=pad.id;const ring=new THREE.Mesh(new THREE.TorusGeometry(pad.radius,.075,6,48),mat(color,.2,.3,color));ring.rotation.x=Math.PI/2;ring.position.set(pad.x,.13,pad.z);group.add(ring);wallText(pad.size+' VS '+pad.size,pad.x,1.1,pad.z-2.8,3.5,.85,'#eafee1')}
   arch(0,24,'메인 로비',0xb5ce9b);wallText('VECTOR // ATRIUM',0,5.5,-25.9,13,1.2,'#def4c2');wallText('DUEL PADS',14.5,3,-20,8,.7,'#b7e3f1');
  }else{
-  // Bright enclosed galleries, colored distance lanes, and a walk-through return arch.
-  solid(0,4,-26,52,8,.45,0xc4d5d8);for(const x of [-26,26])solid(x,4,0,.45,8,52,0xaec5cf);box(group,0,8.1,0,52,.2,52,0xd3e1df);
-  for(let x=-24;x<=24;x+=4)for(const y of [1,3,5,7])box(group,x,y,-25.74,.09,.09,.04,0x718c98,{shadow:false});
-  arch(0,24,'로비로 돌아가기',0x6bdbc0);paint(0,14,49,.16,0xf3c54e);wallText(area==='bots'?'BOT TRAINING':'TARGET GALLERY',0,6.3,-25.7,20,1.3,'#294a57');
-  for(const[z,c]of [[8,0xf0b437],[-4,0x69ad71],[-16,0x6095c7]]){paint(0,z,50,9,c);wallText(Math.round(18-z)+' m',-24.5,1.2,z,2.4,.7,'#f2fff4',Math.PI/2)}
-  for(let x=-24;x<=24;x+=6)paint(x,-4,.045,48,0xdceadd);
-  if(area==='bots'){
-   [7,-5,-17].forEach((z,row)=>{solid(0,.08*(row+1),z,47,.16*(row+1),4,colors[(row+1)%colors.length]);for(const x of [-23,23])box(group,x,.3+row*.16,z,.12,.5,4,0x334c54)});
-   wallText('100 HP  /  3s RESPAWN',0,4.8,-25.7,15,.8,'#365b64');
-  }else{
-   for(const z of [6,-4,-17]){solid(0,7.5,z,51,.13,.13,0x34454e);for(const x of [-25,25])solid(x,3.7,z,.12,7.5,.12,0x34454e)}
-   for(const s of stationsForArea('targets')){const top=s.y+2.14,wire=box(group,s.x,(7.5+top)/2,s.z,.035,7.5-top,.035,0x2c414c);wire.name='target-suspension'}
-   wallText('BULLSEYE  /  3s RESET',0,4.8,-25.7,15,.8,'#365b64');
+  // A spacious hangar: the center is open to both floors and every target floats freely.
+  solid(0,-.25,0,144,.5,176,0x90a6a5);
+  for(const x of [-72,72])solid(x,9,0,.5,18,176,0x72969e);
+  for(const z of [-88,88])solid(0,9,z,144,18,.5,0xadc9c6);
+  for(const x of [-42,42]){
+   solid(x,8.15,-15,36,.5,120,0xd6cda9);
+   for(const z of [-65,-25,15,43])for(const edge of [-16,16])solid(x+edge,4,z,.5,8,.5,0x4c6368);
+   for(const z of [-73,43])solid(x,9,z,36,1.1,.15,0x85adb0);
   }
+  solid(0,8.15,-70,50,.5,10,0xd6cda9);
+  for(let z=-80;z<70;z+=10)paint(0,z,142,.06,0xc0d2c3);
+  for(let x=-65;x<=65;x+=10)paint(x,0,.06,170,0xc0d2c3);
+  for(const [z,c] of [[20,0xe8bc48],[-10,0x64ad83],[-45,0x598fb9],[-68,0xb08cbe]]){paint(0,z,140,4,c);wallText((65-z)+' m',-70,2,z,4,1,'#eaf4ec',Math.PI/2)}
+  for(const x of [-42,42]){const pad=cylinder(group,x,.12,50,2.8,2.8,.24,0x345a66,36);pad.name='practice-trampoline';const ring=new THREE.Mesh(new THREE.TorusGeometry(2.5,.12,8,48),mat(0x96ffe1,.2,.2,0x58d5bb));ring.rotation.x=Math.PI/2;ring.position.set(x,.28,50);group.add(ring);wallText('↑ 2F',x,2.2,53,4,1,'#c3ffdf')}
+  arch(0,83,'로비로 돌아가기',0x6bdbc0,8);
+  wallText('TRAINING HANGAR',0,14,-87.6,38,2,'#294a57');
+  wallText('BOTS + FLOATING TARGETS / 2 FLOORS',0,11,-87.6,32,1,'#365b64');
  }
+
  return{area,stations:stationsForArea(area)};
 }
 export function makeRangeTarget(THREE,{suspended=false}={}){
