@@ -175,3 +175,11 @@ The ten arenas include High Citadel, Skyline rooftops, Red Mesa, Iron Foundry, G
 - Ten structurally different maps include enclosed arenas, fatal perimeter boundaries, water and void gaps with accessible outer platforms.
 - 36 uniquely named weapons, including six fantasy weapons and twenty active-ability melee weapons. Old purchases migrate with catalogue version 2.
 - Melee: right-click / E activates the equipped ability. The HUD shows cooldown. Reflect, cover placement (8 seconds), directional dash, dash attack, backstab, slam and temporary triple jump are also checked by the online server.
+
+
+### v23 fixes, shop and emotes
+- The first-screen map list scrolls independently of combat input. Lobby robots are framed within phone and desktop viewports; double click / double tap still opens the hidden atrium.
+- Mobile compatibility mouse events cannot cancel toggle aim; camera finger ownership survives multitouch releases. Slide changes to a stop icon while sliding. Near-ready sniper input is buffered through reload completion.
+- Shop groups: primary, sidearm, melee. Selected owned weapons show the exact gameplay model and statistics; locked weapons show an alpha silhouette and description. Preview rendering does not change equipped weapons or ammunition.
+- Five free emotes: T opens the picker, Y now refills practice ammunition. Moving, firing or being hit cancels a dance. Online emotes are validated by the server and synchronized to other players.
+- HTML asset URLs include content hashes to prevent mixing an older cached bundle/style with new markup.

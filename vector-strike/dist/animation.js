@@ -1,3 +1,4 @@
+import {applyEmotePose} from './emotes.js';
 import {sampleMotion} from './motion-sampling.js';
 // Render-only action poses. Positions are metres in the existing weapon/agent
 // model space; rotations are radians. Apply every delta to a saved rest transform.
@@ -94,6 +95,6 @@ export function agentActionPose(state={}){
   knee:c('kneeX')+s('kneeX')+.20*air,foot:c('ankleX')+s('ankleX')}));
  const gunPosition=[-.018*reload,-.04*crouch-.06*slide+.025*hit-.055*reload,-.12*shoot+.20*strike+.035*reload];
  const gunRotation=[pitch-.13*shoot+.06*hit+.25*strike+.25*reload,0,-.16*strike-.18*reload];
- return{torsoPosition:boundVector(torsoPosition,.3),torsoRotation:boundVector(torsoRotation,.6),headPosition,headRotation,
-  hipsPosition:[0,c('hipsY')+s('hipsY'),c('hipsZ')+s('hipsZ')],arms,legs,gunPosition,gunRotation:boundVector(gunRotation,1.6),shoot,hit,reload};
+ return applyEmotePose({torsoPosition:boundVector(torsoPosition,.3),torsoRotation:boundVector(torsoRotation,.6),headPosition,headRotation,
+  hipsPosition:[0,c('hipsY')+s('hipsY'),c('hipsZ')+s('hipsZ')],arms,legs,gunPosition,gunRotation:boundVector(gunRotation,1.6),shoot,hit,reload},state.emoteId,state.emoteTime);
 }

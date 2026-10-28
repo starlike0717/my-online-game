@@ -158,6 +158,7 @@ wss.on('connection',(ws,req)=>{
     if(m.type==='adminCheats'){const holder=ws.identity?.holder;if(holder?.role!=='admin'||holder.username!==adminConfig?.username||!ws.room||!ws.playerId)return;const p=ws.room.players.get(ws.playerId),keys=['speed','fly','aim','evasion','health','ammo'];if(!p||!m.flags||keys.some(k=>typeof m.flags[k]!=='boolean'))return;p.adminCheats=Object.fromEntries(keys.map(k=>[k,m.flags[k]]));if(p.adminCheats.health)p.health=MAX_HEALTH;send(ws,{type:'adminCheats',id:p.id,flags:p.adminCheats,health:p.health})}
     if(!ws.room||!ws.playerId)return;
     if(m.type==='move'){if(!ws.room.move(ws.playerId,m)){const p=ws.room.players.get(ws.playerId);if(p&&p.health>0&&ws.room.phase!=='finished')send(ws,{type:'correct',x:p.x,y:p.y,z:p.z})}}
+    if(m.type==='emote'){const accepted=ws.room.emote(ws.playerId,m.emoteId),p=ws.room.players.get(ws.playerId);send(ws,{type:'emoteAck',accepted,emoteId:p?.emoteId,startedAt:p?.emoteStartedAt||0,until:p?.emoteUntil||0})}
     if(m.type==='meleeAbility'){ws.room.meleeAbility(ws.playerId)}
     if(m.type==='dash'){const accepted=ws.room.dash(ws.playerId,{right:m.right,forward:m.forward}),p=ws.room.players.get(ws.playerId);if(p)send(ws,{type:'dashAck',seq:m.seq,accepted,until:p.dashUntil,readyAt:p.dashReadyAt,speed:p.dashSpeed,direction:p.dashDirection||[0,0],x:p.x,y:p.y,z:p.z,serverTime:Date.now()})}
     if(m.type==='shoot'){const result=ws.room.shoot(ws.playerId,m.dir,{aim:m.aim===true});acknowledgeLoadout(ws,'shotAck',m,result.accepted)}

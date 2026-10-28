@@ -28,7 +28,24 @@ export function toggleSlide(player){
 }
 export class ShotBuffer{
  constructor(){this.until=0;this.weapon=null}
- request(now,weapon){this.until=now+350;this.weapon=weapon}
+ request(now,weapon,waitMs=350){this.until=now+Math.max(350,Math.min(1000,waitMs+200));this.weapon=weapon}
  clear(){this.until=0}
  consume(now,weapon,ready){if(this.weapon!==weapon||now>this.until){this.clear();return false}if(!ready||!this.until)return false;this.clear();return true}
+}
+
+export function touchDevice(media=globalThis.matchMedia,nav=globalThis.navigator){
+ const matches=q=>typeof media==='function'&&media(q).matches;
+ return matches('(pointer:coarse)')||(Number(nav?.maxTouchPoints)>0&&matches('(any-pointer:coarse)'));
+}
+// One camera finger owns its gesture; lifting the joystick finger cannot cancel it.
+export function bindTouchLook(canvas,{active,getLook,setLook,move}){
+ canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||!active()||getLook())return;e.preventDefault();setLook({id:e.pointerId,x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId)});
+ canvas.addEventListener('pointermove',e=>{const look=getLook();if(!look||e.pointerId!==look.id||!active())return;move(e.clientX-look.x,e.clientY-look.y);look.x=e.clientX;look.y=e.clientY});
+ const end=e=>{if(getLook()?.id===e.pointerId)setLook(null)};
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,end);
+}
+export function slideButtonState(button,sliding){
+ button.classList.toggle('active',sliding);button.setAttribute('aria-pressed',String(sliding));
+ button.setAttribute('aria-label',sliding?'슬라이드 멈추기':'슬라이드하기');button.title=sliding?'슬라이드 멈추기':'슬라이드하기';
+ const icon=button.querySelector('[data-slide-motion]'),stop=button.querySelector('[data-slide-stop]');if(icon)icon.style.display=sliding?'none':'';if(stop)stop.style.display=sliding?'':'none';
 }

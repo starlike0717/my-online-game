@@ -39,7 +39,7 @@ export function poseAgentRig(THREE,g,pose){
  for(const a of r.armLinks){
   const grip=a.side<0?new THREE.Vector3(-.11,-.09,0):new THREE.Vector3(.04,-.16,-.29);
   if(a.side<0){grip.x-=pose.reload*.08;grip.y-=pose.reload*.20;grip.z-=pose.reload*.15}
-  d.gun.localToWorld(grip);r.spine.worldToLocal(grip);
+  if(pose.handTargets)grip.fromArray(pose.handTargets[a.side<0?0:1]);else{d.gun.localToWorld(grip);r.spine.worldToLocal(grip);}
   const root=a.shoulder.position.clone(),pole=root.clone().add(new THREE.Vector3(a.side*.55,-.5,-.08));
   const {elbow,end}=solveLimb(THREE,root,grip,pole,.44,.62);placeSegment(THREE,a.upper,root,elbow);placeSegment(THREE,a.lower,elbow,end);a.hand.position.copy(end);a.hand.quaternion.copy(d.gun.quaternion);
  }
