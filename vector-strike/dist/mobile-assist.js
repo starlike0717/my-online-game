@@ -38,12 +38,31 @@ export function touchDevice(media=globalThis.matchMedia,nav=globalThis.navigator
  return matches('(pointer:coarse)')||(Number(nav?.maxTouchPoints)>0&&matches('(any-pointer:coarse)'));
 }
 // One camera finger owns its gesture; lifting the joystick finger cannot cancel it.
-export function bindTouchLook(canvas,{active,getLook,setLook,move}){
- canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||!active()||getLook())return;e.preventDefault();setLook({id:e.pointerId,x:e.clientX,y:e.clientY});canvas.setPointerCapture(e.pointerId)});
- canvas.addEventListener('pointermove',e=>{const look=getLook();if(!look||e.pointerId!==look.id||!active())return;move(e.clientX-look.x,e.clientY-look.y);look.x=e.clientX;look.y=e.clientY});
- const end=e=>{if(getLook()?.id===e.pointerId)setLook(null)};
+function capturePointer(element,id){try{element.setPointerCapture?.(id)}catch{}}
+function releasePointer(element,id){try{if(element.hasPointerCapture?.(id))element.releasePointerCapture?.(id)}catch{}}
+const validPoint=e=>Number.isFinite(e.clientX)&&Number.isFinite(e.clientY);
+export function bindTouchLook(canvas,{active,getLook,setLook,move,getViewport=()=>null}){
+ const end=e=>{if(getLook()?.id===e.pointerId){setLook(null);releasePointer(canvas,e.pointerId)}};
+ canvas.addEventListener('pointerdown',e=>{if(e.pointerType==='mouse'||!active()||getLook()||!validPoint(e))return;e.preventDefault();setLook({id:e.pointerId,x:e.clientX,y:e.clientY,viewport:getViewport()?.slice()});capturePointer(canvas,e.pointerId)});
+ canvas.addEventListener('pointermove',e=>{const look=getLook();if(!look||e.pointerId!==look.id)return;const viewport=getViewport();if(!active()||viewport&&look.viewport&&viewport.some((v,i)=>v!==look.viewport[i])){end(e);return}if(!validPoint(e))return;move(e.clientX-look.x,e.clientY-look.y);look.x=e.clientX;look.y=e.clientY});
  for(const type of ['pointerup','pointercancel','lostpointercapture'])canvas.addEventListener(type,end);
+ for(const type of ['pointerup','pointercancel'])canvas.ownerDocument?.addEventListener(type,end);
 }
+export function joystickValue(x,y,rect,deadZone=.12){
+ if(![x,y,rect?.left,rect?.top,rect?.width,rect?.height].every(Number.isFinite)||rect.width<=0||rect.height<=0)return{x:0,y:0};
+ const dx=(x-rect.left-rect.width/2)/(rect.width*.35),dy=(y-rect.top-rect.height/2)/(rect.height*.35),distance=Math.hypot(dx,dy);
+ if(distance<=deadZone)return{x:0,y:0};const amount=(Math.min(1,distance)-deadZone)/(1-deadZone);return{x:dx/distance*amount,y:dy/distance*amount};
+}
+export function bindJoystick(element,{active,getPointer,setPointer,change}){
+ const update=e=>{const v=joystickValue(e.clientX,e.clientY,element.getBoundingClientRect());change(v.x,v.y)};
+ element.addEventListener('pointerdown',e=>{if(!active()||getPointer()!=null||!validPoint(e)||e.button>0)return;e.preventDefault();setPointer(e.pointerId);capturePointer(element,e.pointerId);update(e)});
+ element.addEventListener('pointermove',e=>{if(e.pointerId!==getPointer())return;if(!active()){end(e);return}if(validPoint(e))update(e)});
+ const end=e=>{if(e.pointerId!==getPointer())return;setPointer(null);change(0,0);releasePointer(element,e.pointerId)};
+ for(const type of ['pointerup','pointercancel','lostpointercapture'])element.addEventListener(type,end);
+ for(const type of ['pointerup','pointercancel'])element.ownerDocument?.addEventListener(type,end);
+}
+export const wantsTouchSprint=move=>move.y<-.55&&Math.hypot(move.x,move.y)>.82;
+export function requestLandscape(element,orientation){try{return Promise.resolve(element.requestFullscreen?.()).then(()=>orientation?.lock?.('landscape')).catch(()=>{})}catch{return Promise.resolve()}}
 export function slideButtonState(button,sliding){
  button.classList.toggle('active',sliding);button.setAttribute('aria-pressed',String(sliding));
  button.setAttribute('aria-label',sliding?'슬라이드 멈추기':'슬라이드하기');button.title=sliding?'슬라이드 멈추기':'슬라이드하기';

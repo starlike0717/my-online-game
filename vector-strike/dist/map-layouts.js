@@ -1,3 +1,4 @@
+import {addMapArt} from './map-art.js';
 import {groundHeight} from './world-rules.js';
 const theme=(id,name,ko,desc,sky,ground,accent)=>({id,name,ko,desc,tag:ko,coords:desc,sky,fog:sky,ground,wall:0x75858a,accent,light:0xffeed5,sun:2.2});
 export const maps=[
@@ -12,6 +13,19 @@ export const maps=[
  theme('islands','SKY ISLANDS','하늘섬','공중 섬·외곽 섬·가는 연결로 / 공허에 빠지면 사망',0xabb4dc,0x8797a1,0xbc9df4),
  theme('spring','SPRING GARDEN','점프 정원','트램펄린·정자·높은 전망대 / 정원 밖 이탈 시 사망',0xb0cfb4,0x758d67,0xa3efd0)
 ];
+const lighting=[
+ {sky:0xb3d3e4,ground:0x989d9c,wall:0x87949d,hemiSky:0xe6f3ff,hemiGround:0x766c57,ambient:2.1,light:0xffecd1,sun:2.5,density:.007},
+ {sky:0x48545a,ground:0x625f4d,wall:0x6b6e5f,hemiSky:0xc0d0d4,hemiGround:0x3a382d,ambient:1.6,light:0xe2d7bb,sun:1.5,density:.014},
+ {sky:0x8090b2,ground:0x718598,wall:0x718697,hemiSky:0xc3d4fa,hemiGround:0x4a5874,ambient:2,light:0xffd4b0,sun:1.8,density:.006},
+ {sky:0xd7edf2,ground:0xc5d9df,wall:0x91b2c0,hemiSky:0xf4ffff,hemiGround:0x7b969f,ambient:2.7,light:0xffffff,sun:2.4,density:.003},
+ {sky:0x7db4cc,ground:0x98754f,wall:0x637c8b,hemiSky:0xd7efff,hemiGround:0x355868,ambient:2.2,light:0xffedcf,sun:2.3,density:.006},
+ {sky:0x90d7f2,ground:0x76b786,wall:0xb9d9ce,hemiSky:0xe9fff4,hemiGround:0x64844d,ambient:2.5,light:0xfff4d3,sun:2.7,density:.004},
+ {sky:0xc8a574,ground:0xad9369,wall:0x9e8b69,hemiSky:0xffe6bd,hemiGround:0x68513d,ambient:1.8,light:0xffcc91,sun:2.3,density:.010},
+ {sky:0x10394f,ground:0x759fa7,wall:0x315e75,hemiSky:0x7ae5f0,hemiGround:0x113e64,ambient:2,light:0xb2efff,sun:1.6,density:.014},
+ {sky:0x3d366d,ground:0x9587ba,wall:0x796697,hemiSky:0xc5baff,hemiGround:0x39305d,ambient:2.1,light:0xcfdcff,sun:2,density:.005},
+ {sky:0xb0ceac,ground:0x6f996c,wall:0x84966d,hemiSky:0xe7f4c8,hemiGround:0x557143,ambient:2.1,light:0xffe2ac,sun:2.6,density:.005}
+];
+maps.forEach((m,i)=>{Object.assign(m,lighting[i]);m.fog=m.sky});
 const idx=n=>Number.isInteger(n)&&n>=0&&n<maps.length?n:0;
 const rect=(x,z,w,d,y=0)=>({x,z,w,d,y});
 export const mapWorlds=maps.map((_,i)=>({limit:[0,3,5,7].includes(i)?26.8:76,boundary:[0,3,5,7].includes(i)?'wall':[1,6,9].includes(i)?'kill':'fall',edge:i===1?33:31,deathY:-8,floors:[rect(0,0,80,80)]}));
@@ -63,10 +77,10 @@ for(const[x,z]of [[-18,13],[8,-14],[18,12],[-8,-20]])pad(9,x,z);
 function bounds(b){return{min:[b.x-b.w/2,b.y-b.h/2,b.z-b.d/2],max:[b.x+b.w/2,b.y+b.h/2,b.z+b.d/2]}}
 export function mapBounds(n){return layouts[idx(n)].map(bounds)}
 export function buildMapObjects(THREE,group,n,{box,cylinder,mat,wallText}){
- const i=idx(n),m=maps[i],objects=[];for(const b of layouts[i]){const mesh=box(group,b.x,b.y,b.z,b.w,b.h,b.d,b.color,{collision:true});mesh.name=b.name;mesh.userData.mapCollider=b.name;if(b.name==='aquarium-tank'){mesh.material=mat(b.color).clone();mesh.material.transparent=true;mesh.material.opacity=.3;mesh.material.depthWrite=false}objects.push(mesh)}
+ const i=idx(n),m=maps[i],objects=[];for(const b of layouts[i]){const mesh=box(group,b.x,b.y,b.z,b.w,b.h,b.d,b.color,{collision:true});mesh.name=b.name;mesh.userData.mapCollider=b.name;if(b.name==='aquarium-tank'){mesh.material=mat(b.color).clone();mesh.material.transparent=true;mesh.material.opacity=.3;mesh.material.depthWrite=false;mesh.material.userData.mapArtOwned=true}objects.push(mesh)}
  if(i===4)box(group,0,-.8,0,170,.1,170,0x4c9eb8,{shadow:false});
- if(i===7){for(const x of [-18,18])for(let k=0;k<12;k++){const fish=new THREE.Mesh(new THREE.ConeGeometry(.3,.9,5),mat([0xffb653,0xed7caf,0x95e2bd][k%3]));fish.rotation.z=Math.PI/2;fish.position.set(x+Math.sin(k*2)*3,1+Math.sin(k)*.8+1,-17+k*2.5);group.add(fish)}for(const z of [-18,-10,-2,6,14]){const hoop=new THREE.Mesh(new THREE.TorusGeometry(3.8,.09,6,32,Math.PI),mat(0x67a5ba));hoop.position.set(0,0,z);group.add(hoop)}for(const x of [-3.8,3.8]){const pane=box(group,x,1.7,-2,.035,3.4,40,0x8fe6ef,{shadow:false});pane.material=mat(0x8fe6ef).clone();pane.material.transparent=true;pane.material.opacity=.12;pane.material.depthWrite=false}}
+ if(i===7){for(const x of [-18,18])for(let k=0;k<12;k++){const fish=new THREE.Mesh(new THREE.ConeGeometry(.3,.9,5),mat([0xffb653,0xed7caf,0x95e2bd][k%3]));fish.rotation.z=Math.PI/2;fish.position.set(x+Math.sin(k*2)*3,1+Math.sin(k)*.8+1,-17+k*2.5);group.add(fish)}for(const z of [-18,-10,-2,6,14]){const hoop=new THREE.Mesh(new THREE.TorusGeometry(3.8,.09,6,32,Math.PI),mat(0x67a5ba));hoop.position.set(0,0,z);group.add(hoop)}for(const x of [-3.8,3.8]){const pane=box(group,x,1.7,-2,.035,3.4,40,0x8fe6ef,{shadow:false});pane.material=mat(0x8fe6ef).clone();pane.material.transparent=true;pane.material.opacity=.12;pane.material.depthWrite=false;pane.material.userData.mapArtOwned=true}}
  if(i===9){const basin=cylinder(group,12,.3,0,3.5,3.5,.6,0x9daea1,32);const water=cylinder(group,12,.63,0,3.2,3.2,.02,0x80d1de,32);water.name='fountain-water'}
  for(const p of pads[i]){const disk=cylinder(group,p.x,.07,p.z,1.5,1.5,.12,0x4baeb0,32);const ring=new THREE.Mesh(new THREE.TorusGeometry(1.5,.1,6,40),mat(0x8dffde,.1,.2,0x224f44));ring.rotation.x=Math.PI/2;ring.position.set(p.x,.16,p.z);group.add(ring)}
- wallText?.(m.ko,0,5,-26,15,1,'#ecf4df');return{objects,specials:pads[i].map(p=>({...p})),rules:mapWorlds[i],map:m,colliderCount:objects.length,internalCount:objects.filter(o=>!['floor','boundary'].includes(o.name)).length};
+ const art=addMapArt(THREE,group,i,{mat},objects);wallText?.(m.ko,0,5,-26,15,1,'#ecf4df');return{objects,landmarks:art.userData.landmarks,specials:pads[i].map(p=>({...p})),rules:mapWorlds[i],map:m,colliderCount:objects.length,internalCount:objects.filter(o=>!['floor','boundary'].includes(o.name)).length};
 }
