@@ -1,0 +1,2422 @@
+{
+  "started": "2026-10-29T11:54:31.962Z",
+  "finished": "2026-10-29T11:55:11.058Z",
+  "method": "200 fresh complete client initializations with real Three.js geometry, DOM events and deterministic timers; WebGL rasterization, browser layout and physical phone touch are not exercised. 20 runs additionally simulate authoritative Arena matches.",
+  "runs": 200,
+  "passed": 200,
+  "failed": 0,
+  "profiles": {
+    "lifecycle": 20,
+    "shoot-reload": 20,
+    "switch-timers": 20,
+    "hidden-range": 20,
+    "shop": 20,
+    "emotes": 20,
+    "touch-input": 20,
+    "motion-pause": 20,
+    "melee-abilities": 20,
+    "online-arena": 20
+  },
+  "results": [
+    {
+      "run": 1,
+      "profile": "lifecycle",
+      "map": 0,
+      "weapon": 0,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 2,
+      "profile": "lifecycle",
+      "map": 1,
+      "weapon": 1,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 3,
+      "profile": "lifecycle",
+      "map": 2,
+      "weapon": 2,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 4,
+      "profile": "lifecycle",
+      "map": 3,
+      "weapon": 3,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 5,
+      "profile": "lifecycle",
+      "map": 4,
+      "weapon": 4,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 6,
+      "profile": "lifecycle",
+      "map": 5,
+      "weapon": 5,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 7,
+      "profile": "lifecycle",
+      "map": 6,
+      "weapon": 6,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 8,
+      "profile": "lifecycle",
+      "map": 7,
+      "weapon": 7,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 9,
+      "profile": "lifecycle",
+      "map": 8,
+      "weapon": 8,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 10,
+      "profile": "lifecycle",
+      "map": 9,
+      "weapon": 9,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 11,
+      "profile": "shoot-reload",
+      "map": 0,
+      "weapon": 10,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 12,
+      "profile": "shoot-reload",
+      "map": 1,
+      "weapon": 11,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 13,
+      "profile": "shoot-reload",
+      "map": 2,
+      "weapon": 12,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 14,
+      "profile": "shoot-reload",
+      "map": 3,
+      "weapon": 13,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 15,
+      "profile": "shoot-reload",
+      "map": 4,
+      "weapon": 14,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 16,
+      "profile": "shoot-reload",
+      "map": 5,
+      "weapon": 15,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 17,
+      "profile": "shoot-reload",
+      "map": 6,
+      "weapon": 16,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 18,
+      "profile": "shoot-reload",
+      "map": 7,
+      "weapon": 17,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 19,
+      "profile": "shoot-reload",
+      "map": 8,
+      "weapon": 18,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 20,
+      "profile": "shoot-reload",
+      "map": 9,
+      "weapon": 19,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 21,
+      "profile": "switch-timers",
+      "map": 0,
+      "weapon": 20,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 22,
+      "profile": "switch-timers",
+      "map": 1,
+      "weapon": 21,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 23,
+      "profile": "switch-timers",
+      "map": 2,
+      "weapon": 22,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 24,
+      "profile": "switch-timers",
+      "map": 3,
+      "weapon": 23,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 25,
+      "profile": "switch-timers",
+      "map": 4,
+      "weapon": 24,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 26,
+      "profile": "switch-timers",
+      "map": 5,
+      "weapon": 25,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 27,
+      "profile": "switch-timers",
+      "map": 6,
+      "weapon": 26,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 28,
+      "profile": "switch-timers",
+      "map": 7,
+      "weapon": 27,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 29,
+      "profile": "switch-timers",
+      "map": 8,
+      "weapon": 28,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 30,
+      "profile": "switch-timers",
+      "map": 9,
+      "weapon": 29,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 31,
+      "profile": "hidden-range",
+      "map": 0,
+      "weapon": 30,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 32,
+      "profile": "hidden-range",
+      "map": 1,
+      "weapon": 31,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 33,
+      "profile": "hidden-range",
+      "map": 2,
+      "weapon": 32,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 34,
+      "profile": "hidden-range",
+      "map": 3,
+      "weapon": 33,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 35,
+      "profile": "hidden-range",
+      "map": 4,
+      "weapon": 34,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 36,
+      "profile": "hidden-range",
+      "map": 5,
+      "weapon": 35,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 37,
+      "profile": "hidden-range",
+      "map": 6,
+      "weapon": 0,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 38,
+      "profile": "hidden-range",
+      "map": 7,
+      "weapon": 1,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 39,
+      "profile": "hidden-range",
+      "map": 8,
+      "weapon": 2,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 40,
+      "profile": "hidden-range",
+      "map": 9,
+      "weapon": 3,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 41,
+      "profile": "shop",
+      "map": 0,
+      "weapon": 4,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 42,
+      "profile": "shop",
+      "map": 1,
+      "weapon": 5,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 43,
+      "profile": "shop",
+      "map": 2,
+      "weapon": 6,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 44,
+      "profile": "shop",
+      "map": 3,
+      "weapon": 7,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 45,
+      "profile": "shop",
+      "map": 4,
+      "weapon": 8,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 46,
+      "profile": "shop",
+      "map": 5,
+      "weapon": 9,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 47,
+      "profile": "shop",
+      "map": 6,
+      "weapon": 10,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 48,
+      "profile": "shop",
+      "map": 7,
+      "weapon": 11,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 49,
+      "profile": "shop",
+      "map": 8,
+      "weapon": 12,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 50,
+      "profile": "shop",
+      "map": 9,
+      "weapon": 13,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 51,
+      "profile": "emotes",
+      "map": 0,
+      "weapon": 14,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 52,
+      "profile": "emotes",
+      "map": 1,
+      "weapon": 15,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 53,
+      "profile": "emotes",
+      "map": 2,
+      "weapon": 16,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 54,
+      "profile": "emotes",
+      "map": 3,
+      "weapon": 17,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 55,
+      "profile": "emotes",
+      "map": 4,
+      "weapon": 18,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 56,
+      "profile": "emotes",
+      "map": 5,
+      "weapon": 19,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 57,
+      "profile": "emotes",
+      "map": 6,
+      "weapon": 20,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 58,
+      "profile": "emotes",
+      "map": 7,
+      "weapon": 21,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 59,
+      "profile": "emotes",
+      "map": 8,
+      "weapon": 22,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 60,
+      "profile": "emotes",
+      "map": 9,
+      "weapon": 23,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 61,
+      "profile": "touch-input",
+      "map": 0,
+      "weapon": 24,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 62,
+      "profile": "touch-input",
+      "map": 1,
+      "weapon": 25,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 63,
+      "profile": "touch-input",
+      "map": 2,
+      "weapon": 26,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 64,
+      "profile": "touch-input",
+      "map": 3,
+      "weapon": 27,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 65,
+      "profile": "touch-input",
+      "map": 4,
+      "weapon": 28,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 66,
+      "profile": "touch-input",
+      "map": 5,
+      "weapon": 29,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 67,
+      "profile": "touch-input",
+      "map": 6,
+      "weapon": 30,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 68,
+      "profile": "touch-input",
+      "map": 7,
+      "weapon": 31,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 69,
+      "profile": "touch-input",
+      "map": 8,
+      "weapon": 32,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 70,
+      "profile": "touch-input",
+      "map": 9,
+      "weapon": 33,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 71,
+      "profile": "motion-pause",
+      "map": 0,
+      "weapon": 34,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 72,
+      "profile": "motion-pause",
+      "map": 1,
+      "weapon": 35,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 73,
+      "profile": "motion-pause",
+      "map": 2,
+      "weapon": 0,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 74,
+      "profile": "motion-pause",
+      "map": 3,
+      "weapon": 1,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 75,
+      "profile": "motion-pause",
+      "map": 4,
+      "weapon": 2,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 76,
+      "profile": "motion-pause",
+      "map": 5,
+      "weapon": 3,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 77,
+      "profile": "motion-pause",
+      "map": 6,
+      "weapon": 4,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 78,
+      "profile": "motion-pause",
+      "map": 7,
+      "weapon": 5,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 79,
+      "profile": "motion-pause",
+      "map": 8,
+      "weapon": 6,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 80,
+      "profile": "motion-pause",
+      "map": 9,
+      "weapon": 7,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 81,
+      "profile": "melee-abilities",
+      "map": 0,
+      "weapon": 8,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 82,
+      "profile": "melee-abilities",
+      "map": 1,
+      "weapon": 9,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 83,
+      "profile": "melee-abilities",
+      "map": 2,
+      "weapon": 10,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 84,
+      "profile": "melee-abilities",
+      "map": 3,
+      "weapon": 11,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 85,
+      "profile": "melee-abilities",
+      "map": 4,
+      "weapon": 12,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 86,
+      "profile": "melee-abilities",
+      "map": 5,
+      "weapon": 13,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 87,
+      "profile": "melee-abilities",
+      "map": 6,
+      "weapon": 14,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 88,
+      "profile": "melee-abilities",
+      "map": 7,
+      "weapon": 15,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 89,
+      "profile": "melee-abilities",
+      "map": 8,
+      "weapon": 16,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 90,
+      "profile": "melee-abilities",
+      "map": 9,
+      "weapon": 17,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 91,
+      "profile": "online-arena",
+      "map": 0,
+      "weapon": 18,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 92,
+      "profile": "online-arena",
+      "map": 1,
+      "weapon": 19,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 93,
+      "profile": "online-arena",
+      "map": 2,
+      "weapon": 20,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 94,
+      "profile": "online-arena",
+      "map": 3,
+      "weapon": 21,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 95,
+      "profile": "online-arena",
+      "map": 4,
+      "weapon": 22,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 96,
+      "profile": "online-arena",
+      "map": 5,
+      "weapon": 23,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 97,
+      "profile": "online-arena",
+      "map": 6,
+      "weapon": 24,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 98,
+      "profile": "online-arena",
+      "map": 7,
+      "weapon": 25,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 99,
+      "profile": "online-arena",
+      "map": 8,
+      "weapon": 26,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 100,
+      "profile": "online-arena",
+      "map": 9,
+      "weapon": 27,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 101,
+      "profile": "lifecycle",
+      "map": 0,
+      "weapon": 28,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 102,
+      "profile": "lifecycle",
+      "map": 1,
+      "weapon": 29,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 103,
+      "profile": "lifecycle",
+      "map": 2,
+      "weapon": 30,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 104,
+      "profile": "lifecycle",
+      "map": 3,
+      "weapon": 31,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 105,
+      "profile": "lifecycle",
+      "map": 4,
+      "weapon": 32,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 106,
+      "profile": "lifecycle",
+      "map": 5,
+      "weapon": 33,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 107,
+      "profile": "lifecycle",
+      "map": 6,
+      "weapon": 34,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 108,
+      "profile": "lifecycle",
+      "map": 7,
+      "weapon": 35,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 109,
+      "profile": "lifecycle",
+      "map": 8,
+      "weapon": 0,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 110,
+      "profile": "lifecycle",
+      "map": 9,
+      "weapon": 1,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 111,
+      "profile": "shoot-reload",
+      "map": 0,
+      "weapon": 2,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 112,
+      "profile": "shoot-reload",
+      "map": 1,
+      "weapon": 3,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 113,
+      "profile": "shoot-reload",
+      "map": 2,
+      "weapon": 4,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 114,
+      "profile": "shoot-reload",
+      "map": 3,
+      "weapon": 5,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 115,
+      "profile": "shoot-reload",
+      "map": 4,
+      "weapon": 6,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 116,
+      "profile": "shoot-reload",
+      "map": 5,
+      "weapon": 7,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 117,
+      "profile": "shoot-reload",
+      "map": 6,
+      "weapon": 8,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 118,
+      "profile": "shoot-reload",
+      "map": 7,
+      "weapon": 9,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 119,
+      "profile": "shoot-reload",
+      "map": 8,
+      "weapon": 10,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 120,
+      "profile": "shoot-reload",
+      "map": 9,
+      "weapon": 11,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 121,
+      "profile": "switch-timers",
+      "map": 0,
+      "weapon": 12,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 122,
+      "profile": "switch-timers",
+      "map": 1,
+      "weapon": 13,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 123,
+      "profile": "switch-timers",
+      "map": 2,
+      "weapon": 14,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 124,
+      "profile": "switch-timers",
+      "map": 3,
+      "weapon": 15,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 125,
+      "profile": "switch-timers",
+      "map": 4,
+      "weapon": 16,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 126,
+      "profile": "switch-timers",
+      "map": 5,
+      "weapon": 17,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 127,
+      "profile": "switch-timers",
+      "map": 6,
+      "weapon": 18,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 128,
+      "profile": "switch-timers",
+      "map": 7,
+      "weapon": 19,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 129,
+      "profile": "switch-timers",
+      "map": 8,
+      "weapon": 20,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 130,
+      "profile": "switch-timers",
+      "map": 9,
+      "weapon": 21,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 131,
+      "profile": "hidden-range",
+      "map": 0,
+      "weapon": 22,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 132,
+      "profile": "hidden-range",
+      "map": 1,
+      "weapon": 23,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 133,
+      "profile": "hidden-range",
+      "map": 2,
+      "weapon": 24,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 134,
+      "profile": "hidden-range",
+      "map": 3,
+      "weapon": 25,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 135,
+      "profile": "hidden-range",
+      "map": 4,
+      "weapon": 26,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 136,
+      "profile": "hidden-range",
+      "map": 5,
+      "weapon": 27,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 137,
+      "profile": "hidden-range",
+      "map": 6,
+      "weapon": 28,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 138,
+      "profile": "hidden-range",
+      "map": 7,
+      "weapon": 29,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 139,
+      "profile": "hidden-range",
+      "map": 8,
+      "weapon": 30,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 140,
+      "profile": "hidden-range",
+      "map": 9,
+      "weapon": 31,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 141,
+      "profile": "shop",
+      "map": 0,
+      "weapon": 32,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 142,
+      "profile": "shop",
+      "map": 1,
+      "weapon": 33,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 143,
+      "profile": "shop",
+      "map": 2,
+      "weapon": 34,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 144,
+      "profile": "shop",
+      "map": 3,
+      "weapon": 35,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 145,
+      "profile": "shop",
+      "map": 4,
+      "weapon": 0,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 146,
+      "profile": "shop",
+      "map": 5,
+      "weapon": 1,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 147,
+      "profile": "shop",
+      "map": 6,
+      "weapon": 2,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 148,
+      "profile": "shop",
+      "map": 7,
+      "weapon": 3,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 149,
+      "profile": "shop",
+      "map": 8,
+      "weapon": 4,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 150,
+      "profile": "shop",
+      "map": 9,
+      "weapon": 5,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 151,
+      "profile": "emotes",
+      "map": 0,
+      "weapon": 6,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 152,
+      "profile": "emotes",
+      "map": 1,
+      "weapon": 7,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 153,
+      "profile": "emotes",
+      "map": 2,
+      "weapon": 8,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 154,
+      "profile": "emotes",
+      "map": 3,
+      "weapon": 9,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 155,
+      "profile": "emotes",
+      "map": 4,
+      "weapon": 10,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 156,
+      "profile": "emotes",
+      "map": 5,
+      "weapon": 11,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 157,
+      "profile": "emotes",
+      "map": 6,
+      "weapon": 12,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 158,
+      "profile": "emotes",
+      "map": 7,
+      "weapon": 13,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 159,
+      "profile": "emotes",
+      "map": 8,
+      "weapon": 14,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 160,
+      "profile": "emotes",
+      "map": 9,
+      "weapon": 15,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 161,
+      "profile": "touch-input",
+      "map": 0,
+      "weapon": 16,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 162,
+      "profile": "touch-input",
+      "map": 1,
+      "weapon": 17,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 163,
+      "profile": "touch-input",
+      "map": 2,
+      "weapon": 18,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 164,
+      "profile": "touch-input",
+      "map": 3,
+      "weapon": 19,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 165,
+      "profile": "touch-input",
+      "map": 4,
+      "weapon": 20,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 166,
+      "profile": "touch-input",
+      "map": 5,
+      "weapon": 21,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 167,
+      "profile": "touch-input",
+      "map": 6,
+      "weapon": 22,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 168,
+      "profile": "touch-input",
+      "map": 7,
+      "weapon": 23,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 169,
+      "profile": "touch-input",
+      "map": 8,
+      "weapon": 24,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 170,
+      "profile": "touch-input",
+      "map": 9,
+      "weapon": 25,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 171,
+      "profile": "motion-pause",
+      "map": 0,
+      "weapon": 26,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 172,
+      "profile": "motion-pause",
+      "map": 1,
+      "weapon": 27,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 173,
+      "profile": "motion-pause",
+      "map": 2,
+      "weapon": 28,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 174,
+      "profile": "motion-pause",
+      "map": 3,
+      "weapon": 29,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 175,
+      "profile": "motion-pause",
+      "map": 4,
+      "weapon": 30,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 176,
+      "profile": "motion-pause",
+      "map": 5,
+      "weapon": 31,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 177,
+      "profile": "motion-pause",
+      "map": 6,
+      "weapon": 32,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 178,
+      "profile": "motion-pause",
+      "map": 7,
+      "weapon": 33,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 179,
+      "profile": "motion-pause",
+      "map": 8,
+      "weapon": 34,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 180,
+      "profile": "motion-pause",
+      "map": 9,
+      "weapon": 35,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 181,
+      "profile": "melee-abilities",
+      "map": 0,
+      "weapon": 0,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 182,
+      "profile": "melee-abilities",
+      "map": 1,
+      "weapon": 1,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 183,
+      "profile": "melee-abilities",
+      "map": 2,
+      "weapon": 2,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 184,
+      "profile": "melee-abilities",
+      "map": 3,
+      "weapon": 3,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 185,
+      "profile": "melee-abilities",
+      "map": 4,
+      "weapon": 4,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 186,
+      "profile": "melee-abilities",
+      "map": 5,
+      "weapon": 5,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 187,
+      "profile": "melee-abilities",
+      "map": 6,
+      "weapon": 6,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 188,
+      "profile": "melee-abilities",
+      "map": 7,
+      "weapon": 7,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 189,
+      "profile": "melee-abilities",
+      "map": 8,
+      "weapon": 8,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 190,
+      "profile": "melee-abilities",
+      "map": 9,
+      "weapon": 9,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 191,
+      "profile": "online-arena",
+      "map": 0,
+      "weapon": 10,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 192,
+      "profile": "online-arena",
+      "map": 1,
+      "weapon": 11,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 193,
+      "profile": "online-arena",
+      "map": 2,
+      "weapon": 12,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 194,
+      "profile": "online-arena",
+      "map": 3,
+      "weapon": 13,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 195,
+      "profile": "online-arena",
+      "map": 4,
+      "weapon": 14,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 196,
+      "profile": "online-arena",
+      "map": 5,
+      "weapon": 15,
+      "viewport": [
+        1366,
+        768
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 197,
+      "profile": "online-arena",
+      "map": 6,
+      "weapon": 16,
+      "viewport": [
+        1920,
+        1080
+      ],
+      "touch": false,
+      "passed": true
+    },
+    {
+      "run": 198,
+      "profile": "online-arena",
+      "map": 7,
+      "weapon": 17,
+      "viewport": [
+        844,
+        390
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 199,
+      "profile": "online-arena",
+      "map": 8,
+      "weapon": 18,
+      "viewport": [
+        390,
+        844
+      ],
+      "touch": true,
+      "passed": true
+    },
+    {
+      "run": 200,
+      "profile": "online-arena",
+      "map": 9,
+      "weapon": 19,
+      "viewport": [
+        768,
+        1024
+      ],
+      "touch": true,
+      "passed": true
+    }
+  ]
+}

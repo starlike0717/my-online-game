@@ -1,8 +1,8 @@
 import {rayActor,rayBox} from './combat.js';
 const wrap=a=>Math.atan2(Math.sin(a),Math.cos(a));
 export function assistAim({eye,yaw,pitch,targets=[],blocks=[],dt=0,enabled=false,aiming=false}){
- if(!enabled||!aiming)return{yaw,pitch,target:null};let best=null;
- for(const t of targets){if(t.health<=0||t.friendly)continue;const p=[t.x,t.y+(t.targetKind?1.45:1.35)*(t.height??1.7)/1.7,t.z],d=p.map((v,i)=>v-eye[i]),distance=Math.hypot(...d);if(distance<1||distance>38)continue;const dir=d.map(v=>v/distance);if(blocks.some(b=>rayBox(eye,dir,b)<distance-.1))continue;
+ yaw=Number.isFinite(yaw)?yaw:0;pitch=Number.isFinite(pitch)?pitch:0;if(!enabled||!aiming||!Array.isArray(eye)||!eye.every(Number.isFinite)||!Number.isFinite(dt))return{yaw,pitch,target:null};let best=null;
+ for(const t of targets){if(!t||t.health<=0||t.friendly||![t.x,t.y,t.z].every(Number.isFinite))continue;const p=[t.x,t.y+(t.targetKind?1.45:1.35)*(t.height??1.7)/1.7,t.z],d=p.map((v,i)=>v-eye[i]),distance=Math.hypot(...d);if(distance<1||distance>38)continue;const dir=d.map(v=>v/distance);if(blocks.some(b=>rayBox(eye,dir,b)<distance-.1))continue;
   const wantedYaw=Math.atan2(-d[0],-d[2]),wantedPitch=Math.atan2(d[1],Math.hypot(d[0],d[2])),dy=wrap(wantedYaw-yaw),dp=wantedPitch-pitch,error=Math.hypot(dy*Math.cos(pitch),dp);if(error>.075||best&&best.error<=error)continue;best={id:t.id,dy,dp,error};
  }if(!best)return{yaw,pitch,target:null};const h=Math.max(0,Math.min(.07,dt)),amount=1-Math.exp(-2.8*h),limit=.38*h,clamp=n=>Math.max(-limit,Math.min(limit,n));return{yaw:yaw+clamp(best.dy*amount),pitch:Math.max(-1.45,Math.min(1.45,pitch+clamp(best.dp*amount))),target:best.id};
 }

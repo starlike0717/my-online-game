@@ -183,3 +183,9 @@ The ten arenas include High Citadel, Skyline rooftops, Red Mesa, Iron Foundry, G
 - Shop groups: primary, sidearm, melee. Selected owned weapons show the exact gameplay model and statistics; locked weapons show an alpha silhouette and description. Preview rendering does not change equipped weapons or ammunition.
 - Five free emotes: T opens the picker, Y now refills practice ammunition. Moving, firing or being hit cancels a dance. Online emotes are validated by the server and synchronized to other players.
 - HTML asset URLs include content hashes to prevent mixing an older cached bundle/style with new markup.
+
+### v24 repeated execution audit
+- 200 fresh client scenario runs and 186 functional/integration tests passed. See `reports/QA-200.md` for the method and limits; run `npm run test:repeat` to reproduce.
+- Deferred reloads are bound to their weapon and round. Pause, focus loss, travel and weapon switches cancel stale input and burst fire.
+- Post-death projectile kills cannot revive the player. Invalid saved settings/loadouts/records recover without resetting currency or purchased weapons.
+- Server bots check support and fatal boundaries before moving over docks or floating islands.

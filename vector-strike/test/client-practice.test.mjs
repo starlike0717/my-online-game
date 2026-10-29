@@ -95,7 +95,7 @@ function crossbowFixture(weapon){
  const c=vm.createContext({...clientGlobals(),THREE,weapons,selectedWeapon:weapon,combat:true,paused:false,onlineDead:false,mode:'training',ammo:weapons[weapon].mag,reserveAmmo:weapons[weapon].reserve,reloading:0,shotCooldown:0,drawing:false,drawStarted:0,shotIndex:0,recoil:0,aim:false,meleeSwing:0,meleeBackSwing:false,muzzleTime:0,muzzle:new THREE.Object3D(),muzzleLight:{intensity:0},motion:{recoilSide:0,kickVelocity:0},camera:new THREE.PerspectiveCamera(),player:{grounded:true,speed:0,height:1.7},localAvatar:null,localProjectiles:[],projectileSeq:0,magazineInventory:new Map(),reserveInventory:new Map(),pendingReload:0,
   isPlayerStunned:()=>false,attackRay:()=>({origin:new THREE.Vector3(0,1.7,2),base:new THREE.Vector3(0,0,-1)}),makeProjectile,refillMagazine,makeProjectileVisual(p){visuals.push(p)},sound(){},updateWeaponHud(){},notice(){},cancelDraw(){c.drawing=false},setTimeout(callback,delay){timers.push({callback,delay})},$:(id)=>{if(!elements.has(id))elements.set(id,{hidden:true,textContent:''});return elements.get(id)}
  });
- extract(c,['beginAttack','shoot','reload','completeWeaponReload']);return {c,visuals,timers,elements};
+ extract(c,['scheduleAutomaticReload','beginAttack','shoot','reload','completeWeaponReload']);return {c,visuals,timers,elements};
 }
 
 test('actual crossbow click launches a bolt immediately without bow draw, and reload conserves finite ammunition',()=>{

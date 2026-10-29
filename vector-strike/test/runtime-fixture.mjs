@@ -1,3 +1,4 @@
+import * as preferences from '../dist/preferences.js';
 import * as shop from '../dist/shop.js';
 import * as emotes from '../dist/emotes.js';
 import * as rigging from '../dist/rigging.js';
@@ -7,4 +8,4 @@ import * as world from '../dist/world-rules.js';
 import * as maps from '../dist/map-layouts.js';
 import * as catalog from '../dist/catalog.js';
 import * as mobile from '../dist/mobile-assist.js';
-export function clientGlobals(){return {...shop,...emotes,...mobile,...rigging,...animation,...skins,...world,...maps,starterWeaponIds:catalog.starterWeaponIds,window:{scrollTo(){}},previewMode:false,activeEmote:null,emotePreviousView:null,emoteMenuOpen:false,updateEmote(){},stopEmote(){},inputLabel:(_id,fallback)=>fallback,isTouch:false,reloading:0,selectedSkin:0,armorTexture:null,adminEnabled:false,adminCheats:{},activeWorld:maps.worldForMap(3),mapSpecials:[],abilityBlocks:new Map(),updateAbilityEffects(){},burstRemaining:0,burstWeapon:null,shotBuffer:new mobile.ShotBuffer(),performance:{now:()=>1000},hubArea:'atrium',hubRespawns:[],hubGeneration:0,hubPadState:{id:null,time:0,started:false},hubSession:false,dyingAgents:[],syncAbilityBlocks(){},jumpSlideCancel(){},updateAimAssist(){},updateAutoFire(){}}}
+export function clientGlobals(){return {...preferences,combatEpoch:0,weaponEpoch:0,resetCombatInput(){},scheduleAutomaticReload(){},...shop,...emotes,...mobile,...rigging,...animation,...skins,...world,...maps,starterWeaponIds:catalog.starterWeaponIds,window:{scrollTo(){}},previewMode:false,activeEmote:null,emotePreviousView:null,emoteMenuOpen:false,updateEmote(){},stopEmote(){},inputLabel:(_id,fallback)=>fallback,isTouch:false,reloading:0,selectedSkin:0,armorTexture:null,adminEnabled:false,adminCheats:{},activeWorld:maps.worldForMap(3),mapSpecials:[],abilityBlocks:new Map(),updateAbilityEffects(){},burstRemaining:0,burstWeapon:null,shotBuffer:new mobile.ShotBuffer(),performance:{now:()=>1000},hubArea:'atrium',hubRespawns:[],hubGeneration:0,hubPadState:{id:null,time:0,started:false},hubSession:false,dyingAgents:[],syncAbilityBlocks(){},jumpSlideCancel(){},updateAimAssist(){},updateAutoFire(){}}}
